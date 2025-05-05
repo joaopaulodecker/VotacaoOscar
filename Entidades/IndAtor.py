@@ -1,10 +1,17 @@
-from IndicacaoAbstract import Indicacao
-from Ator import Ator
-from Categoria import Categoria
-from MembroAcademia import MembroAcademia
+from Entidades.IndicacaoAbstract import Indicacao
+from Entidades.Ator import Ator
+from Entidades.Categoria import Categoria
+from Entidades.MembroAcademia import MembroAcademia
+
 
 class IndAtor(Indicacao):
-    def __init__(self, ator: Ator, categoria: Categoria, membro_indicador: MembroAcademia):
+
+    def __init__(
+        self,
+        ator: Ator,
+        categoria: Categoria,
+        membro_indicador: MembroAcademia
+    ):
         super().__init__(categoria, membro_indicador)
         if isinstance(ator, Ator):
             self.__ator = ator
@@ -12,10 +19,14 @@ class IndAtor(Indicacao):
     @property
     def ator(self):
         return self.__ator
-    
+
     @ator.setter
     def ator(self, ator):
         self.__ator = ator
 
     def indicar(self) -> str:
-        return f"Ator '{self.ator.nome}' indicado por {self.membro_indicador.nome} na categoria '{self.categoria.nome}'."
+        return (
+            f"Ator '{self.ator.nome}' indicado por "
+            f"{self.membro_indicador.nome} na categoria "
+            f"'{self.categoria.nome}'."
+        )

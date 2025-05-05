@@ -1,5 +1,5 @@
-from IndicacaoAbstract import Indicacao
-from Voto import Voto
+from Entidades.IndicacaoAbstract import Indicacao
+import Entidades.Voto  # ← lazy import
 
 class Categoria:
     def __init__(self, nome: str):
@@ -28,7 +28,7 @@ class Categoria:
             self.__indicacoes.append(indicacao)
 
     def adicionar_voto(self, voto):
-        if isinstance(voto, Voto):
+        if isinstance(voto, Entidades.Voto.Voto):  # ← lazy acesso
             self.__votos.append(voto)
 
     def total_de_indicacoes(self):
@@ -36,3 +36,4 @@ class Categoria:
 
     def total_de_votos(self):
         return len(self.__votos)
+
