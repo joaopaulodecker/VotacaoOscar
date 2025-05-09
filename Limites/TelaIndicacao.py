@@ -1,10 +1,3 @@
-from Entidades.Ator import Ator
-from Entidades.Diretor import Diretor
-from Entidades.Filme import Filme
-from Entidades.IndAtor import IndAtor
-from Entidades.IndDiretor import IndDiretor
-from Entidades.IndFilme import IndFilme
-
 class TelaIndicacao:
     def __init__(self, controlador):
         self.controlador = controlador

@@ -14,20 +14,20 @@ class ControladorIndicacao:
     def indicar_ator(self, nome):
         ator = Ator(nome, self.membro.data_nascimento, self.membro.nacionalidade)
         IndAtor(ator, self.categorias["ator"], self.membro)
-        self._listar("ator")
+        self.listar_indicacoes("ator")
 
     def indicar_diretor(self, nome):
         diretor = Diretor(nome, self.membro.data_nascimento, self.membro.nacionalidade)
         IndDiretor(diretor, self.categorias["diretor"], self.membro)
-        self._listar("diretor")
+        self.listar_indicacoes("diretor")
 
     def indicar_filme(self, titulo):
         diretor = Diretor("Fictício", self.membro.data_nascimento, self.membro.nacionalidade)
         filme = Filme(titulo, diretor, 2024, self.membro.nacionalidade)
         IndFilme(filme, self.categorias["filme"], self.membro)
-        self._listar("filme")
+        self.listar_indicacoes("filme")
 
-    def _listar(self, tipo):
+    def listar_indicacoes(self, tipo):
         cat = self.categorias[tipo]
         nomes = []
         for ind in cat.indicacoes:
@@ -38,3 +38,9 @@ class ControladorIndicacao:
         print("\nIndicados:")
         for nome, qtd in cont.items():
             print(f"- {nome}: {qtd} indicação(ões)")
+
+    def lista_indicacoes(self):
+        todas = []
+        for categoria in self.categorias.values():
+            todas.extend(categoria.indicacoes)
+        return todas
