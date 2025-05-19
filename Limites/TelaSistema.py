@@ -1,12 +1,16 @@
+from Utils.validadores import le_num_inteiro
+
 class TelaSistema:
-    def __init__(self):
-        print()
-#     def tela_opcoes(self):
-#         print("-------- SisLivros ---------")
-#         print("Escolha sua opcao")
-#         print("1 - Livros")
-#         print("2 - Amigos")
-#         print("3 - Emprestimos")
-#         print("0 - Finalizar sistema")
-#         opcao = int(input("Escolha a opcao:"))
-#         return opcao
+    def mostra_opcoes(self):
+        print("\n----- MENU PRINCIPAL -----")
+        print("1 - Membro Academia")
+        print("2 - Atores")
+        print("3 - Diretores")
+        print("4 - Filmes")
+        print("5 - Categorias")
+        print("6 - Indicar")
+        print("7 - Votar")
+        print("0 - Sair")
+        
+        return le_num_inteiro("Escolha a opção: ")
+

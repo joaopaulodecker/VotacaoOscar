@@ -1,31 +1,52 @@
-from datetime import date
-from Entidades.Voto import Voto
+from Limites.TelaVotacao import TelaVotacao
+from Utils.validadores import le_num_inteiro
+from collections import Counter
 
 class ControladorVotacao:
-    def __init__(self, categorias: dict, membro):
-        self.categorias = categorias
-        self.membro = membro
+    def __init__(self, controlador_membros, controlador_categorias):
+        self.__tela = TelaVotacao()
+        self.__controlador_membros = controlador_membros
+        self.__controlador_categorias = controlador_categorias
+        self.__votos = []
 
-    def votar(self):
-        print("Categorias disponíveis:")
-        for chave, cat in self.categorias.items():
-            print(f"- {chave} ({cat.nome})")
+    def iniciar_votacao(self):
+        membro_id = self.__tela.pegar_id_membro()
+        if not self.__controlador_membros.existe_id(membro_id):
+            print("❌ Membro não encontrado.")
+            return
 
-        tipo = input("Digite o tipo da categoria: ").lower()
+        tipo = self.__tela.pegar_tipo_voto()
+        categoria = self.__tela.pegar_categoria(self.__controlador_categorias.listar_categorias())
 
-        if tipo in self.categorias:
-            cat = self.categorias[tipo]
-            if not cat.indicacoes:
-                print("Nenhum indicado nesta categoria.")
-                return
+        if not categoria:
+            print("⚠️ Votação cancelada: nenhuma categoria disponível.")
+            return
 
-            print(f"\nIndicados na categoria {cat.nome}:")
-            for i, ind in enumerate(cat.indicacoes):
-                nome = ind.ator.nome if tipo == "ator" else ind.diretor.nome if tipo == "diretor" else ind.filme.titulo
-                print(f"{i+1}. {nome}")
+        indicados = self.__listar_indicados_fake(tipo, categoria)
+        escolhido = self.__tela.selecionar_indicado(indicados)
 
-            idx = int(input("Escolha o número do indicado: ")) - 1
-            Voto(self.membro, cat, date.today())
-            print("Voto registrado com sucesso!")
-        else:
-            print("Categoria inválida.")
+        self.__votos.append({
+            "membro_id": membro_id,
+            "categoria": categoria["nome"],
+            "tipo": tipo,
+            "escolhido": escolhido["nome"]
+        })
+        print("✅ Voto registrado com sucesso!")
+
+    def __listar_indicados_fake(self, tipo, categoria):
+        # Simulação de indicados por tipo e categoria
+        return [
+            {"id": 1, "nome": f"{tipo.title()} Exemplo 1"},
+            {"id": 2, "nome": f"{tipo.title()} Exemplo 2"},
+            {"id": 3, "nome": f"{tipo.title()} Exemplo 3"}
+        ]
+
+    def mostrar_resultados(self):
+        if not self.__votos:
+            print("📭 Nenhum voto registrado.")
+            return
+
+        contagem = Counter(v["escolhido"] for v in self.__votos)
+        resultados = [{"nome": nome, "votos": qtd} for nome, qtd in contagem.items()]
+        resultados.sort(key=lambda x: x["votos"], reverse=True)
+        self.__tela.exibir_resultados(resultados)
