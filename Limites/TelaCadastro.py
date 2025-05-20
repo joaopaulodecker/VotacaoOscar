@@ -14,11 +14,40 @@ class TelaCadastro:
         return le_num_inteiro("Escolha uma opção: ")
 
     def pegar_dados(self):
-        print(f"\nPreencha os dados do {self.__tipo}:")
-        nome = le_string_nao_vazia("Nome: ")
-        id = le_num_inteiro("ID: ")
-        nacionalidade = le_string_nao_vazia("Nacionalidade: ")
-        return {"id": id, "nome": nome, "nacionalidade": nacionalidade}
+        """Coleta dados para cadastro, diferenciando categorias (sem nacionalidade)"""
+        print(f"\n--- Cadastro de {self.__tipo.capitalize()} ---")
+        print("(Deixe em branco para cancelar)")
+
+        try:
+            # Coleta nome (obrigatório para todos)
+            nome = input("Nome: ").strip()
+            if not nome:
+                return None
+
+            # Coleta ID (numérico)
+            id = le_num_inteiro("ID: ")
+
+            # Lógica diferenciada para categorias
+            if self.__tipo == "categoria":
+                return {
+                    "id": id,
+                    "nome": nome
+                }
+            else:
+                # Para membros/atores/diretores
+                nacionalidade = input("Nacionalidade: ").strip()
+                if not nacionalidade:
+                    return None
+
+                return {
+                    "id": id,
+                    "nome": nome,
+                    "nacionalidade": nacionalidade
+                }
+
+        except KeyboardInterrupt:
+            print("\nOperação cancelada pelo usuário")
+            return None
 
     def pegar_id(self):
         return le_num_inteiro("Informe o ID: ")

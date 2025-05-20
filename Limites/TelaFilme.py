@@ -6,7 +6,7 @@ class TelaFilmes:
         print("3 - Excluir Filme")
         print("4 - Listar Filmes")
         print("0 - Voltar")
-        
+
         opcao = input("Escolha a opção: ")
         if opcao.isdigit():
             return int(opcao)

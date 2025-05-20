@@ -35,11 +35,27 @@ class TelaVotacao:
         return categorias[0]
 
     def selecionar_indicado(self, indicados):
-        print("\nIndicações disponíveis:")
-        for i, indicado in enumerate(indicados):
-            print(f"{i + 1} - {indicado['nome']}")
-        idx = le_num_inteiro("Escolha seu voto (número): ")
+        print("\n🎬 INDICADOS DISPONÍVEIS:")
+        print("-" * 40)
+        for i, indicado in enumerate(indicados, start=1):
+            print(f"{i}. {indicado['nome']}")
+        print("-" * 40)
+
+        idx = le_num_inteiro("🎯 Escolha seu voto (número): ")
         if 1 <= idx <= len(indicados):
             return indicados[idx - 1]
+
         print("❌ Voto inválido. Selecionando o primeiro por padrão.")
         return indicados[0]
+
+    def exibir_resultados(self, resultados):
+        print("\n🏆 RESULTADOS DA VOTAÇÃO 🏆")
+        print("=" * 40)
+
+        for i, resultado in enumerate(resultados, start=1):
+            nome = resultado["nome"]
+            votos = resultado["votos"]
+            barra = "█" * votos  # Barrinha proporcional aos votos
+            print(f"{i}. {nome:<25} | {votos:>2} voto(s) {barra}")
+
+        print("=" * 40)

@@ -3,7 +3,7 @@ def le_num_inteiro(msg):
         entrada = input(msg)
         if entrada.isdigit():
             return int(entrada)
-        print("Entrada inválida. Digite um número inteiro.")
+        print("❌ Entrada inválida. Digite um número inteiro.")
 
 def le_string_nao_vazia(mensagem="Digite um texto: "):
     while True:

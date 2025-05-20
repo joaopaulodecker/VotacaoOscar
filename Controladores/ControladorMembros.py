@@ -1,12 +1,28 @@
 class ControladorMembros:
     def __init__(self):
-        self.__membros = []  # Exemplo: [{"id": 1, "nome": "João"}]
+        self.__membros = []
+        self.__tela = TelaMembros()  # Você precisará criar essa tela
 
     def adicionar_membro(self, membro):
-        self.__membros.append(membro)
+        if self.existe_id(membro["id"]):
+            print(f"❌ Membro com ID {membro['id']} já registrado!")
+            input("🔁 Pressione Enter para continuar...")
+            return False
+        else:
+            self.__membros.append(membro)
+            print(f"✅ Membro {membro['nome']} cadastrado com sucesso!")
+            input("🔁 Pressione Enter para continuar...")
+            return True
 
     def existe_id(self, id_busca):
-        for membro in self.__membros:
-            if membro["id"] == id_busca:
-                return True
-        return False
+        return any(membro["id"] == id_busca for membro in self.__membros)
+
+    def listar_membros(self, mostrar_msg_voltar=False):
+        if not self.__membros:
+            print("📭 Nenhum membro cadastrado.")
+        else:
+            print("\n👥 Lista de Membros:")
+            for membro in self.__membros:
+                print(f"ID: {membro['id']} | Nome: {membro['nome']}")
+        if mostrar_msg_voltar:
+            input("🔁 Pressione Enter para voltar ao menu...")

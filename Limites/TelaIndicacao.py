@@ -5,30 +5,29 @@ class TelaIndicacao:
         return le_num_inteiro("Informe o ID do membro da academia: ")
 
     def pegar_tipo_indicacao(self):
-        print("\nVocê quer indicar:")
-        print("1 - Filme")
-        print("2 - Ator")
-        print("3 - Diretor")
-        opcao = le_num_inteiro("Escolha uma opção: ")
+        print("\n📌 Você quer indicar:")
+        print("1️⃣ - Filme 🎬")
+        print("2️⃣ - Ator 🎭")
+        print("3️⃣ - Diretor 🎬")
+        opcao = le_num_inteiro("👉 Escolha uma opção: ")
         if opcao == 1:
             return "filme"
         elif opcao == 2:
             return "ator"
         elif opcao == 3:
             return "diretor"
-        else:
-            print("❌ Tipo inválido. Padrão: Filme")
-            return "filme"
+        print("❌ Tipo inválido. Padrão: Filme.")
+        return "filme"
 
     def pegar_categoria(self, categorias):
         if not categorias:
             print("⚠️ Nenhuma categoria disponível.")
             return None
 
-        print("\nCategorias disponíveis:")
-        for i, cat in enumerate(categorias):
-            print(f"{i + 1} - {cat['nome']}")
-        idx = le_num_inteiro("Escolha a categoria (número): ")
+        print("\n📂 Categorias disponíveis:")
+        for i, cat in enumerate(categorias, start=1):
+            print(f"{i}. {cat['nome']}")
+        idx = le_num_inteiro("🎯 Escolha a categoria (número): ")
         if 1 <= idx <= len(categorias):
             return categorias[idx - 1]
         print("❌ Categoria inválida. Selecionando a primeira por padrão.")

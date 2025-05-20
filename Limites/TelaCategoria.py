@@ -12,7 +12,7 @@ class TelaCategoria:
         return int(input("Escolha uma opção:"))
 
     def pega_dados_categoria(self):
-        nome = input("Digite o nome da categoria:")
+        nome = input("Nome da categoria: ")
         return {"nome": nome}
 
     def mostra_mensagem(self, msg):
