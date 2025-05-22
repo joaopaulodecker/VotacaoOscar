@@ -1,4 +1,5 @@
 from Utils.validadores import le_num_inteiro, le_string_nao_vazia
+from Excecoes.OpcaoInvalida import OpcaoInvalida
 
 class TelaCadastro:
     def __init__(self, tipo):
@@ -11,30 +12,29 @@ class TelaCadastro:
         print("3 - Excluir")
         print("4 - Listar")
         print("0 - Voltar")
-        return le_num_inteiro("Escolha uma opção: ")
+
+        opcao = le_num_inteiro("Escolha uma opção: ")
+        if opcao not in range(0, 5):
+            raise OpcaoInvalida()
+        return opcao
 
     def pegar_dados(self):
-        """Coleta dados para cadastro, diferenciando categorias (sem nacionalidade)"""
         print(f"\n--- Cadastro de {self.__tipo.capitalize()} ---")
         print("(Deixe em branco para cancelar)")
 
         try:
-            # Coleta nome (obrigatório para todos)
             nome = input("Nome: ").strip()
             if not nome:
                 return None
 
-            # Coleta ID (numérico)
             id = le_num_inteiro("ID: ")
 
-            # Lógica diferenciada para categorias
             if self.__tipo == "categoria":
                 return {
                     "id": id,
                     "nome": nome
                 }
             else:
-                # Para membros/atores/diretores
                 nacionalidade = input("Nacionalidade: ").strip()
                 if not nacionalidade:
                     return None

@@ -1,4 +1,6 @@
 from Utils.validadores import le_num_inteiro
+from Excecoes.OpcaoInvalida import OpcaoInvalida
+
 
 class TelaVotacao:
     def pegar_id_membro(self):
@@ -10,6 +12,7 @@ class TelaVotacao:
         print("2 - Ator")
         print("3 - Diretor")
         opcao = le_num_inteiro("Escolha uma opção: ")
+        
         if opcao == 1:
             return "filme"
         elif opcao == 2:
@@ -17,8 +20,8 @@ class TelaVotacao:
         elif opcao == 3:
             return "diretor"
         else:
-            print("❌ Tipo inválido. Padrão: Filme")
-            return "filme"
+            raise OpcaoInvalida("Tipo de voto inválido.")
+
 
     def pegar_categoria(self, categorias):
         if not categorias:

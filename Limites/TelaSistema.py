@@ -1,4 +1,5 @@
 from Utils.validadores import le_num_inteiro
+from Excecoes.OpcaoInvalida import OpcaoInvalida
 
 class TelaSistema:
     def mostra_opcoes(self):
@@ -11,6 +12,8 @@ class TelaSistema:
         print("6 - Indicar")
         print("7 - Votar")
         print("0 - Sair")
-        
-        return le_num_inteiro("Escolha a opção: ")
 
+        opcao = le_num_inteiro("Escolha a opção: ")
+        if opcao not in range(0, 8):
+            raise OpcaoInvalida()
+        return opcao

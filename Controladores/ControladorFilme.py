@@ -1,6 +1,6 @@
 from Entidades.Filme import Filme
 from Limites.TelaFilme import TelaFilmes
-
+from Excecoes.OpcaoInvalida import OpcaoInvalida
 
 class ControladorFilmes:
     def __init__(self, controlador_sistema):
@@ -10,19 +10,21 @@ class ControladorFilmes:
 
     def abre_tela(self):
         while True:
-            opcao = self.__tela_filmes.mostra_opcoes()
-            if opcao == 1:
-                self.cadastrar()
-            elif opcao == 2:
-                self.alterar()
-            elif opcao == 3:
-                self.excluir()
-            elif opcao == 4:
-                self.listar(mostrar_msg_voltar=True)
-            elif opcao == 0:
-                break
-            else:
-                print("❌ Opção inválida!")
+            try:
+                opcao = self.__tela_filmes.mostra_opcoes()
+                if opcao == 1:
+                    self.cadastrar()
+                elif opcao == 2:
+                    self.alterar()
+                elif opcao == 3:
+                    self.excluir()
+                elif opcao == 4:
+                    self.listar(mostrar_msg_voltar=True)
+                elif opcao == 0:
+                    break
+            except OpcaoInvalida as e:
+                print(f"❌ {e}")
+                input("🔁 Pressione Enter para tentar novamente...")
 
     def cadastrar(self):
         dados = self.__tela_filmes.le_dados_filme()
@@ -79,6 +81,3 @@ class ControladorFilmes:
 
         print("❌ Filme não encontrado.")
         input("🔁 Pressione Enter para voltar ao menu...")
-
-
-

@@ -1,3 +1,5 @@
+from Excecoes.OpcaoInvalida import OpcaoInvalida
+
 class TelaFilmes:
     def mostra_opcoes(self):
         print("\n----- FILMES -----")
@@ -9,8 +11,10 @@ class TelaFilmes:
 
         opcao = input("Escolha a opção: ")
         if opcao.isdigit():
-            return int(opcao)
-        return -1
+            valor = int(opcao)
+            if valor in range(0, 5):
+                return valor
+        raise OpcaoInvalida()
 
     def le_dados_filme(self):
         titulo = input("Título do filme: ")

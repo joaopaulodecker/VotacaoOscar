@@ -1,3 +1,5 @@
+from Excecoes.OpcaoInvalida import OpcaoInvalida
+
 class TelaCategoria:
     def __init__(self):
         pass
@@ -9,7 +11,13 @@ class TelaCategoria:
         print("3 - Listar categorias")
         print("4 - Remover categoria")
         print("0 - Voltar")
-        return int(input("Escolha uma opção:"))
+
+        entrada = input("Escolha uma opção: ").strip()
+        if entrada.isdigit():
+            valor = int(entrada)
+            if valor in range(0, 5):
+                return valor
+        raise OpcaoInvalida()
 
     def pega_dados_categoria(self):
         nome = input("Nome da categoria: ")
@@ -17,4 +25,3 @@ class TelaCategoria:
 
     def mostra_mensagem(self, msg):
         print(f"\n{msg}")
-

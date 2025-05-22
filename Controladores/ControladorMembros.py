@@ -1,7 +1,9 @@
+from Limites.TelaMembroAcademia import TelaMembroAcademia
+
 class ControladorMembros:
     def __init__(self):
         self.__membros = []
-        self.__tela = TelaMembros()  # Você precisará criar essa tela
+        self.__tela = TelaMembroAcademia()
 
     def adicionar_membro(self, membro):
         if self.existe_id(membro["id"]):

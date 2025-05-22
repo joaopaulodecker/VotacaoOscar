@@ -1,4 +1,5 @@
 from Limites.TelaCadastro import TelaCadastro
+from Excecoes.OpcaoInvalida import OpcaoInvalida
 
 class ControladorCadastro:
     def __init__(self, tipo):
@@ -8,25 +9,26 @@ class ControladorCadastro:
 
     @property
     def entidades(self):
-        """Exposição controlada da lista de entidades"""
         return self.__entidades
 
     def abrir_menu(self):
         while True:
-            opcao = self.__tela.mostrar_menu()
-            if opcao == 1:
-                self.cadastrar()
-            elif opcao == 2:
-                self.alterar()
-            elif opcao == 3:
-                self.excluir()
-            elif opcao == 4:
-                self.listar(mostrar_msg_voltar=True)
-            elif opcao == 0:
-                break
-            else:
-                print("❌ Opção inválida.")
-                input("🔁 Pressione Enter para continuar...")
+            try:
+                opcao = self.__tela.mostrar_menu()
+                if opcao == 1:
+                    self.cadastrar()
+                elif opcao == 2:
+                    self.alterar()
+                elif opcao == 3:
+                    self.excluir()
+                elif opcao == 4:
+                    self.listar(mostrar_msg_voltar=True)
+                elif opcao == 0:
+                    break
+            except OpcaoInvalida as e:
+                print(f"❌ {e}")
+                input("🔁 Pressione Enter para tentar novamente...")
+
 
     def cadastrar(self):
         dados = self.__tela.pegar_dados()
