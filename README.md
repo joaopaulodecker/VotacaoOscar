@@ -6,19 +6,9 @@ Desenvolver um sistema em Python com orientação a objetos para simular a vota�
 
 ---
 
-## 🧠 Como funciona o Oscar na vida real?
+## Como funciona o Oscar?
 
-O Oscar é a maior premiação do cinema mundial e acontece em duas etapas principais:
-
-1. **Indicação**  
-   Primeiro, os **membros da Academia** (cerca de 10.500 votantes em 2024) indicam seus favoritos em cada categoria — como Melhor Filme, Melhor Ator, Melhor Direção, etc. Essas indicações podem somar **milhares de votos por categoria**.
-
-2. **Votação Final**  
-   Após as indicações, os mais votados se tornam os **indicados oficiais** — geralmente os **top 5 de cada categoria**.  
-   Aí acontece a segunda rodada: os membros votam novamente, mas agora **apenas entre os finalistas**.
-
-3. **Resultado**  
-   O indicado com **mais votos na segunda rodada** é o vencedor da estatueta dourada.
+O Oscar é a maior premiação do cinema mundial e acontece em duas etapas principais: Indicações e as Votações. É possível o cadastramento de Membros de Academia, Filmes, Diretores, Atores e Categorias. Há todo um processo intenso para saber quem leva para casa a estatueta dourada!
 
 ---
 
@@ -40,12 +30,7 @@ Este projeto simula esse processo todo de forma simples e didática:
 - Cadastro de categorias de premiação
 - Indicação de atores e diretores
 - Registro de votos por membros da academia
-- Geração de relatórios, incluindo:
-  - Indicações por ano e categoria
-  - Votos por categoria e ano
-  - Vencedores por categoria
-  - Vencedores por nacionalidade
-  - Top 3 filmes mais premiados
+- Geração de relatórios
 
 ---
 
@@ -80,18 +65,15 @@ Recomendado: Python 3.10 ou superior
 ## 📁 Estrutura do Projeto
 ```bash
 VotacaoOscar/
-├── controller/        # Controladores das funcionalidades
-├── model/             # Classes de domínio
-├── view/              # Interface com o usuário
-├── data/              # Simulação de armazenamento de dados
-├── main.py            # Arquivo principal de execução
-├── diagramas/         # Diagramas UML
-└── README.md          # Documentação do projeto
+├── Controladores/        # Controladores das funcionalidades
+├── Entidades/            # Classes
+├── Limites/              # Interface com o usuário
+├── Utils/                # Métodos úteis ao projeto
+├── Exceptions            # Utilizado no tratamento de exceções
+├── main.py               # Arquivo principal de execução
 
 ```
 
 ## 👥 Integrantes
 - João Paulo Decker 
 - Cecília Zica Camargo
-
-
