@@ -29,7 +29,7 @@ class TelaCadastro:
 
         try:
             nome_prompt = "Nome"
-            if dados_atuais and dados_atuis.get('nome') is not None:
+            if dados_atuais and dados_atuais.get('nome') is not None:
                 nome_prompt += f" (atual: {dados_atuais['nome']})"
             nome_prompt += ": "
 
