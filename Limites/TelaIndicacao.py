@@ -101,7 +101,7 @@ class TelaIndicacao:
         print("\n--- Selecionar Filme ---")
         for i, filme_obj in enumerate(filmes):
              if isinstance(filme_obj, Filme):
-                print(f"{i + 1}. ID: {filme_obj.id} - Título: {filme_obj.titulo} ({filme_obj.ano})")
+                print(f"{i + 1}. ID: {filme_obj.id_filme} - Título: {filme_obj.titulo} ({filme_obj.ano})")
              else:
                 print(f"{i + 1}. {filme_obj}")
 

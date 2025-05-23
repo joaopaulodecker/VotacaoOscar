@@ -69,7 +69,7 @@ class ControladorIndicacao:
                 print("ℹ️ Seleção de filme cancelada ou inválida.")
                 input("🔁 Pressione Enter para continuar...")
                 return
-            item_indicado_id = item_indicado_obj.id
+            item_indicado_id = item_indicado_obj.id_filme
             nome_display_item_indicado = item_indicado_obj.titulo
         elif tipo_item_indicado == "ator":
             atores_dicts = self.__controlador_membros.buscar_por_funcao("ator")

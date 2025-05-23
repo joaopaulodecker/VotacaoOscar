@@ -1,20 +1,34 @@
 class Filme:
-    def __init__(self, titulo: str, ano: int):
+    def __init__(self, id_filme: int, titulo: str, ano: int, diretor_id: int):
+        self.__id_filme = id_filme
         self.__titulo = titulo
         self.__ano = ano
+        self.__diretor_id = diretor_id
 
     @property
-    def titulo(self):
+    def id_filme(self) -> int:
+        return self.__id_filme
+
+    @property
+    def titulo(self) -> str:
         return self.__titulo
 
     @titulo.setter
-    def titulo(self, titulo):
+    def titulo(self, titulo: str):
         self.__titulo = titulo
 
     @property
-    def ano(self):
+    def ano(self) -> int:
         return self.__ano
 
     @ano.setter
-    def ano(self, ano):
+    def ano(self, ano: int):
         self.__ano = ano
+
+    @property
+    def diretor_id(self) -> int:
+        return self.__diretor_id
+
+    @diretor_id.setter
+    def diretor_id(self, diretor_id: int):
+        self.__diretor_id = diretor_id

@@ -17,7 +17,10 @@ class ControladorMembros:
             return True
 
     def existe_id(self, id_busca):
-        return any(membro["id"] == id_busca for membro in self.__membros)
+        for membro_dict in self.__membros:
+            if membro_dict.get("id") == id_busca:
+                return True
+        return False
 
     def listar_membros(self, mostrar_msg_voltar=False):
         if not self.__membros:
@@ -25,6 +28,23 @@ class ControladorMembros:
         else:
             print("\n👥 Lista de Membros:")
             for membro in self.__membros:
-                print(f"ID: {membro['id']} | Nome: {membro['nome']}")
+                funcao_str = f" | Função: {membro.get('funcao', 'N/A').capitalize()}" if 'funcao' in membro else ""
+                print(f"ID: {membro['id']} | Nome: {membro['nome']}{funcao_str}")
         if mostrar_msg_voltar:
             input("🔁 Pressione Enter para voltar ao menu...")
+
+    def get_diretores_info(self) -> list[dict]:
+        diretores_info = []
+        for membro_dict in self.__membros:
+            if membro_dict.get("funcao") == "diretor":
+                diretores_info.append({
+                    "id": membro_dict.get("id"),
+                    "nome": membro_dict.get("nome")
+                })
+        return diretores_info
+
+    def get_membro_por_id(self, id_membro_busca) -> dict | None:
+        for membro_dict in self.__membros:
+            if membro_dict.get("id") == id_membro_busca:
+                return membro_dict
+        return None

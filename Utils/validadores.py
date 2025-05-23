@@ -1,4 +1,3 @@
-from Excecoes.OpcaoInvalida import OpcaoInvalida
 from datetime import date, datetime
 
 def le_num_inteiro(mensagem_prompt: str, min_val: int | None = None, max_val: int | None = None) -> int:
@@ -23,7 +22,6 @@ def le_num_inteiro(mensagem_prompt: str, min_val: int | None = None, max_val: in
                 print("❌ Entrada inválida. Ocorreu um erro ao converter para número.")
         else:
             print("❌ Entrada inválida. Por favor, digite um número inteiro.")
-
 
 def le_string_nao_vazia(mensagem_prompt: str = "Digite um texto: ") -> str:
     while True:
@@ -95,6 +93,7 @@ def le_float_positivo(mensagem_prompt: str, permitir_zero: bool = False) -> floa
             print("❌ Entrada inválida. Por favor, digite um número válido.")
 
 def le_escolha_de_lista(mensagem_prompt: str, opcoes: list[str], permitir_cancelar: bool = True) -> str | None:
+
     if not opcoes:
         print("⚠️ Nenhuma opção disponível para escolha.")
         return None
@@ -125,3 +124,44 @@ def le_escolha_de_lista(mensagem_prompt: str, opcoes: list[str], permitir_cancel
                 print(f"❌ Número inválido. Escolha entre 1 e {len(opcoes)}" + (" ou 0." if permitir_cancelar else "."))
         except ValueError:
             print("❌ Entrada inválida. Por favor, digite um número.")
+
+def le_texto_alpha_espacos(prompt_msg: str, permitir_vazio_cancela: bool = True) -> str | None:
+    while True:
+        texto = input(prompt_msg).strip()
+        if permitir_vazio_cancela and not texto:
+            return None  # Usuário cancelou
+
+        if not texto:
+            print("❌ Entrada não pode ser vazia. Tente novamente.")
+            continue
+
+        if any(char.isdigit() for char in texto):
+            print("❌ Entrada não deve conter números. Tente novamente.")
+            continue
+
+        if not any(char.isalpha() for char in texto): # garante pelo menos uma letra
+            print("❌ Entrada deve conter pelo menos uma letra. Tente novamente.")
+            continue
+            
+        return texto
+
+def le_opcao_de_lista(prompt_msg: str, lista_opcoes: list[str], permitir_vazio_cancela: bool = True, mensagem_erro_personalizada: str | None = None) -> str | None:
+    opcoes_lower = [opt.lower() for opt in lista_opcoes]
+    while True:
+        escolha = input(prompt_msg).strip()
+        if permitir_vazio_cancela and not escolha:
+            return None # Usuário cancelou
+
+        if not escolha and not permitir_vazio_cancela:
+            print("❌ Opção não pode ser vazia. Tente novamente.")
+            continue
+        
+        escolha_lower = escolha.lower()
+
+        if escolha_lower in opcoes_lower:
+            for i, opt_l in enumerate(opcoes_lower):
+                if opt_l == escolha_lower:
+                    return lista_opcoes[i]
+        
+        erro_msg = mensagem_erro_personalizada if mensagem_erro_personalizada else "Opção inválida."
+        print(f"❌ {erro_msg} As opções válidas são: {', '.join(lista_opcoes)}. Tente novamente.")
