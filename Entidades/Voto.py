@@ -1,35 +1,37 @@
 from __future__ import annotations
-from datetime import date
-from Entidades.MembroAcademia import MembroAcademia
-import Entidades.Categoria  # lazy import
+import Entidades.Categoria
 
 class Voto:
-    def __init__(self, membro_votante: MembroAcademia, categoria: Entidades.Categoria.Categoria, data_voto: date):
-        self.__membro_votante = membro_votante
+    def __init__(self, id_voto: int, membro_id: int, categoria: Entidades.Categoria.Categoria, item_indicado_id: any, tipo_item_indicado: str):
+        self.__id_voto = id_voto
+        self.__membro_id = membro_id
         self.__categoria = categoria
-        self.__data_voto = data_voto
-        self.__categoria.adicionar_voto(self)
+        self.__item_indicado_id = item_indicado_id
+        self.__tipo_item_indicado = tipo_item_indicado
+    @property
+    def id_voto(self) -> int:
+        return self.__id_voto
 
     @property
-    def membro_votante(self):
-        return self.__membro_votante
+    def membro_id(self) -> int:
+        return self.__membro_id
 
-    @membro_votante.setter
-    def membro_votante(self, membro_votante):
-        self.__membro_votante = membro_votante
+    @membro_id.setter
+    def membro_id(self, membro_id: int):
+        self.__membro_id = membro_id
 
     @property
     def categoria(self):
         return self.__categoria
 
     @categoria.setter
-    def categoria(self, categoria):
+    def categoria(self, categoria: Entidades.Categoria.Categoria):
         self.__categoria = categoria
 
     @property
-    def data_voto(self):
-        return self.__data_voto
+    def item_indicado_id(self) -> any:
+        return self.__item_indicado_id
 
-    @data_voto.setter
-    def data_voto(self, data_voto):
-        self.__data_voto = data_voto
+    @property
+    def tipo_item_indicado(self) -> str:
+        return self.__tipo_item_indicado

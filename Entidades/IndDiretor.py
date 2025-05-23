@@ -1,32 +1,33 @@
-from Entidades.IndicacaoAbstract import Indicacao
-from Entidades.Diretor import Diretor
+from Entidades.IndicacaoAbstract import IndicacaoAbstract
 from Entidades.Categoria import Categoria
-from Entidades.MembroAcademia import MembroAcademia
 
+class IndDiretor(IndicacaoAbstract):
+    def __init__(self, id_indicacao: int, membro_id: int, categoria: Categoria, diretor_indicado: dict):
+        if not isinstance(diretor_indicado, dict) or 'id' not in diretor_indicado or 'nome' not in diretor_indicado:
+            raise TypeError("diretor_indicado deve ser um dicionário contendo 'id' e 'nome'.")
 
-class IndDiretor(Indicacao):
-
-    def __init__(
-        self,
-        diretor: Diretor,
-        categoria: Categoria,
-        membro_indicador: MembroAcademia
-    ):
-        super().__init__(categoria, membro_indicador)
-        if isinstance(diretor, Diretor):
-            self.__diretor = diretor
+        super().__init__(
+            id_indicacao=id_indicacao,
+            membro_id=membro_id,
+            categoria=categoria,
+            item_indicado_id=diretor_indicado.get('id'),
+            tipo_item_indicado="diretor"
+        )
+        self.__item_indicado = diretor_indicado
 
     @property
-    def diretor(self):
-        return self.__diretor
+    def item_indicado(self) -> dict:
+        return self.__item_indicado
 
-    @diretor.setter
-    def diretor(self, diretor):
-        self.__diretor = diretor
+    @item_indicado.setter
+    def item_indicado(self, diretor_indicado: dict):
+        if not isinstance(diretor_indicado, dict) or 'id' not in diretor_indicado or 'nome' not in diretor_indicado:
+            raise TypeError("diretor_indicado deve ser um dicionário contendo 'id' e 'nome'.")
+        self.__item_indicado = diretor_indicado
 
-    def indicar(self) -> str:
-        return (
-            f"Diretor '{self.diretor.nome}' indicado por "
-            f"{self.membro_indicador.nome} na categoria "
-            f"'{self.categoria.nome}'."
-        )
+    def obter_detalhes_item_indicado(self) -> str:
+        if self.item_indicado and self.item_indicado.get('nome'):
+            return f"Diretor: {self.item_indicado.get('nome')}"
+        elif self.item_indicado and self.item_indicado.get('id'):
+            return f"Diretor ID: {self.item_indicado.get('id')}"
+        return "Diretor não especificado."

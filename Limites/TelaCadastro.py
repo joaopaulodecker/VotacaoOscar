@@ -39,6 +39,17 @@ class TelaCadastro:
                 if not nacionalidade:
                     return None
 
+                if self.__tipo == "membro":
+                    funcao = input("Função (ator/diretor/jurado): ").strip().lower()
+                    if not funcao:
+                        return None
+                    return {
+                        "id": id,
+                        "nome": nome,
+                        "nacionalidade": nacionalidade,
+                        "funcao": funcao
+                    }
+
                 return {
                     "id": id,
                     "nome": nome,
@@ -51,3 +62,4 @@ class TelaCadastro:
 
     def pegar_id(self):
         return le_num_inteiro("Informe o ID: ")
+

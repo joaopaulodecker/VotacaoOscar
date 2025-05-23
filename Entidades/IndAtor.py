@@ -1,32 +1,34 @@
-from Entidades.IndicacaoAbstract import Indicacao
-from Entidades.Ator import Ator
+from Entidades.IndicacaoAbstract import IndicacaoAbstract
 from Entidades.Categoria import Categoria
-from Entidades.MembroAcademia import MembroAcademia
 
 
-class IndAtor(Indicacao):
+class IndAtor(IndicacaoAbstract):
+    def __init__(self, id_indicacao: int, membro_id: int, categoria: Categoria, ator_indicado: dict):
+        if not isinstance(ator_indicado, dict) or 'id' not in ator_indicado or 'nome' not in ator_indicado:
+            raise TypeError("ator_indicado deve ser um dicionário contendo 'id' e 'nome'.")
 
-    def __init__(
-        self,
-        ator: Ator,
-        categoria: Categoria,
-        membro_indicador: MembroAcademia
-    ):
-        super().__init__(categoria, membro_indicador)
-        if isinstance(ator, Ator):
-            self.__ator = ator
+        super().__init__(
+            id_indicacao=id_indicacao,
+            membro_id=membro_id,
+            categoria=categoria,
+            item_indicado_id=ator_indicado.get('id'),
+            tipo_item_indicado="ator"
+        )
+        self.__item_indicado = ator_indicado
 
     @property
-    def ator(self):
-        return self.__ator
+    def item_indicado(self) -> dict:
+        return self.__item_indicado
 
-    @ator.setter
-    def ator(self, ator):
-        self.__ator = ator
+    @item_indicado.setter
+    def item_indicado(self, ator_indicado: dict):
+        if not isinstance(ator_indicado, dict) or 'id' not in ator_indicado or 'nome' not in ator_indicado:
+            raise TypeError("ator_indicado deve ser um dicionário contendo 'id' e 'nome'.")
+        self.__item_indicado = ator_indicado
 
-    def indicar(self) -> str:
-        return (
-            f"Ator '{self.ator.nome}' indicado por "
-            f"{self.membro_indicador.nome} na categoria "
-            f"'{self.categoria.nome}'."
-        )
+    def obter_detalhes_item_indicado(self) -> str:
+        if self.item_indicado and self.item_indicado.get('nome'):
+            return f"Ator/Atriz: {self.item_indicado.get('nome')}"
+        elif self.item_indicado and self.item_indicado.get('id'):
+            return f"Ator/Atriz ID: {self.item_indicado.get('id')}"
+        return "Ator/Atriz não especificado."
