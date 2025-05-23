@@ -44,8 +44,14 @@ class ControladorCategorias(ControladorCadastro):
             input("🔁 Pressione Enter para continuar...")
             return
 
+        tipo = input("O que será indicado nesta categoria? (ator/diretor/filme): ").strip().lower()
+        if tipo not in Categoria.TIPOS_VALIDOS:
+            print("❌ Tipo inválido! Use: ator, diretor ou filme.")
+            input("🔁 Pressione Enter para continuar...")
+            return
+
         novo_id = self._gerar_proximo_id()
-        nova_categoria = Categoria(id_categoria=novo_id, nome=nome_categoria)
+        nova_categoria = Categoria(id_categoria=novo_id, nome=nome_categoria, tipo_indicacao=tipo)
         self.entidades.append(nova_categoria)
         print(f"✅ Categoria ID {nova_categoria.id} - '{nova_categoria.nome}' cadastrada com sucesso!")
         input("🔁 Pressione Enter para continuar...")

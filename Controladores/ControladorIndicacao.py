@@ -23,7 +23,8 @@ class ControladorIndicacao:
     def iniciar_indicacao(self):
         print("\n--- Nova Indicação ---")
 
-        membros = self.__controlador_membros.entidades
+        membros = self.__controlador_membros.buscar_por_funcao("jurado")
+
         if not membros:
             print("❌ Nenhum membro da academia cadastrado para fazer indicações.")
             input("🔁 Pressione Enter para continuar...")
@@ -48,10 +49,21 @@ class ControladorIndicacao:
             input("🔁 Pressione Enter para continuar...")
             return
 
+        tipo_permitido = categoria_obj_selecionada.tipo_indicacao
+
+        print(f"ℹ️ Esta categoria aceita indicações do tipo: {tipo_permitido.capitalize()}")
+
         tipo_item_indicado = self.__tela_indicacao.pega_tipo_item_indicado(categoria_obj_selecionada.nome)
         if not tipo_item_indicado:
             print("ℹ️ Tipo de indicação não definido ou cancelado.")
             input("🔁 Pressione Enter para continuar...")
+            return
+
+        tipo_permitido = categoria_obj_selecionada.tipo_indicacao.lower()
+        if tipo_item_indicado.lower() != tipo_permitido:
+            print(f"❌ Tipo de indicação inválido para esta categoria!")
+            print(f"➡️ Esta categoria aceita apenas indicações do tipo: '{tipo_permitido.capitalize()}'")
+            input("🔁 Pressione Enter para tentar novamente...")
             return
 
         item_indicado_obj = None

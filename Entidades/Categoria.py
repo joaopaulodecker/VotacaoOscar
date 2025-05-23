@@ -2,7 +2,12 @@ import Entidades.Voto
 from Entidades.IndicacaoAbstract import IndicacaoAbstract
 
 class Categoria:
-    def __init__(self, id_categoria: int, nome: str):
+    TIPOS_VALIDOS = ("ator", "diretor", "filme")
+
+    def __init__(self, id_categoria: int, nome: str, tipo_indicacao: str):
+        self.__tipo = tipo_indicacao.lower()
+        if self.__tipo not in Categoria.TIPOS_VALIDOS:
+            raise ValueError(f"Tipo de indicação inválido: '{tipo_indicacao}'")
         self.__id = id_categoria
         self.__nome = nome
         self.__indicacoes = []
@@ -27,6 +32,10 @@ class Categoria:
     @property
     def votos(self) -> list:
         return self.__votos
+
+    @property
+    def tipo_indicacao(self) -> str:
+        return self.__tipo
 
     def adicionar_indicacao(self, indicacao):
         if isinstance(indicacao, IndicacaoAbstract):
