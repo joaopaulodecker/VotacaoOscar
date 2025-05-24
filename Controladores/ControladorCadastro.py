@@ -1,5 +1,6 @@
 from Limites.TelaCadastro import TelaCadastro
 from Excecoes.OpcaoInvalida import OpcaoInvalida
+from datetime import date
 
 class ControladorCadastro:
     def __init__(self, tipo_entidade):
@@ -39,7 +40,7 @@ class ControladorCadastro:
         print(f"\n--- Cadastro de Novo {self.__tipo_entidade.capitalize()} ---")
         dados = self.__tela.pegar_dados()
         if dados:
-            dados["id"] = self._gerar_proximo_id()  # ID gerado automaticamente
+            dados["id"] = self._gerar_proximo_id()
             self.__entidades.append(dados)
             print(f"✅ {self.__tipo_entidade.capitalize()} cadastrado(a) com sucesso! (ID: {dados['id']})")
         else:
@@ -63,19 +64,20 @@ class ControladorCadastro:
             if entidade.get("id") == id_alvo:
                 entidade_encontrada = entidade
                 break
-
+        
         if entidade_encontrada:
             print(f"\nEditando dados do(a) {self.__tipo_entidade} com ID: {id_alvo}")
             novos_dados = self.__tela.pegar_dados(dados_atuais=entidade_encontrada)
-
+            
             if novos_dados:
+                novos_dados.pop('id', None)
                 entidade_encontrada.update(novos_dados)
                 print("✅ Alteração realizada com sucesso!")
             else:
                 print("ℹ️ Nenhuma alteração realizada.")
         else:
             print(f"❌ {self.__tipo_entidade.capitalize()} com ID {id_alvo} não encontrado.")
-
+        
         input("🔁 Pressione Enter para continuar...")
 
     def excluir(self):
@@ -98,29 +100,51 @@ class ControladorCadastro:
                 entidade_para_excluir = entidade
                 indice_entidade = i
                 break
-
+        
         if entidade_para_excluir:
             del self.__entidades[indice_entidade]
             print("🗑️ Registro excluído com sucesso!")
         else:
             print(f"❌ {self.__tipo_entidade.capitalize()} com ID {id_alvo} não encontrado.")
-
+        
         input("🔁 Pressione Enter para continuar...")
 
     def listar(self, mostrar_msg_voltar=False):
         if not self.__entidades:
             print(f"📭 Nenhum(a) {self.__tipo_entidade} cadastrado(a).")
+            if mostrar_msg_voltar:
+                 input("🔁 Pressione Enter para voltar ao menu...")
             return False
         else:
             print(f"\n--- Lista de {self.__tipo_entidade.capitalize()}s ---")
+            ano_atual = date.today().year
             for entidade in self.__entidades:
                 id_entidade = entidade.get('id', 'N/A')
                 nome_entidade = entidade.get('nome', 'N/A')
-                funcao_entidade = entidade.get('funcao', '')
-                if funcao_entidade:
-                    print(f"ID: {id_entidade} | Nome: {nome_entidade} | Função: {funcao_entidade.capitalize()}")
-                else:
-                    print(f"ID: {id_entidade} | Nome: {nome_entidade}")
+                
+                info_str = f"ID: {id_entidade} | Nome: {nome_entidade}"
+                
+                if self.__tipo_entidade == "membro":
+                    funcao_entidade = entidade.get('funcao', '')
+                    if funcao_entidade:
+                        info_str += f" | Função: {funcao_entidade.capitalize()}"
+                    
+                    ano_nascimento = entidade.get('ano_nascimento')
+                    if ano_nascimento:
+                        try:
+                            idade = ano_atual - int(ano_nascimento)
+                            info_str += f" | Idade: {idade} anos"
+                        except ValueError:
+                            info_str += f" | Ano Nasc.: {ano_nascimento} (inválido)"
+                    else:
+                        info_str += " | Idade: (Não informada)"
+
+                elif self.__tipo_entidade == "categoria":
+                    tipo_indicacao = entidade.get('tipo_indicacao', '')
+                    if tipo_indicacao:
+                        info_str += f" | Tipo de Indicação: {tipo_indicacao.capitalize()}"
+
+                print(info_str)
             print("------------------------------------")
             if mostrar_msg_voltar:
                 input("🔁 Pressione Enter para voltar ao menu...")

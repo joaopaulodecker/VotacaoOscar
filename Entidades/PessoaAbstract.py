@@ -1,12 +1,11 @@
 from abc import ABC
-from datetime import date
 from Entidades.Nacionalidade import Nacionalidade
 
 class PessoaAbstract(ABC):
     def __init__(
         self,
         nome: str,
-        data_nascimento: date,
+        data_nascimento: int,
         nacionalidade: Nacionalidade
     ):
         self.__nome = nome
@@ -22,11 +21,11 @@ class PessoaAbstract(ABC):
         self.__nome = nome
 
     @property
-    def data_nascimento(self) -> date:
+    def data_nascimento(self) -> int:
         return self.__data_nascimento
     
     @data_nascimento.setter
-    def data_nascimento(self, data_nascimento: date):
+    def data_nascimento(self, data_nascimento: int):
         self.__data_nascimento = data_nascimento
 
     @property

@@ -1,13 +1,12 @@
 from Entidades.PessoaAbstract import PessoaAbstract
 from Entidades.Nacionalidade import Nacionalidade
-from datetime import date
 
 class MembroAcademia(PessoaAbstract):
     def __init__(
         self,
         id_membro: int,
         nome: str,
-        data_nascimento: date,
+        data_nascimento: int,
         nacionalidade: Nacionalidade,
         funcao: str
     ):

@@ -1,6 +1,5 @@
 from Entidades.PessoaAbstract import PessoaAbstract
 from Entidades.Nacionalidade import Nacionalidade
-from datetime import date
 
 
 class Ator(PessoaAbstract):
@@ -8,7 +7,7 @@ class Ator(PessoaAbstract):
     def __init__(
         self,
         nome: str,
-        data_nascimento: date,
+        data_nascimento: int,
         nacionalidade: Nacionalidade
     ):
         super().__init__(nome, data_nascimento, nacionalidade)

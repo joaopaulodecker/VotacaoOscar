@@ -1,6 +1,6 @@
 from Utils.validadores import le_num_inteiro, le_texto_alpha_espacos
 from Excecoes.OpcaoInvalida import OpcaoInvalida
-
+from datetime import date
 
 class TelaCadastro:
     def __init__(self, tipo):
@@ -32,7 +32,7 @@ class TelaCadastro:
             if dados_atuais and dados_atuais.get('nome') is not None:
                 nome_prompt += f" (atual: {dados_atuais['nome']})"
             nome_prompt += ": "
-
+            
             nome_input = le_texto_alpha_espacos(nome_prompt, permitir_vazio_cancela=True)
             nome_final = nome_input if nome_input is not None else dados_atuais.get('nome') if dados_atuais else None
 
@@ -70,6 +70,37 @@ class TelaCadastro:
                 return None
 
             if self.__tipo == "membro":
+                ano_nascimento_final = None
+                ano_nascimento_prompt = "Ano de Nascimento"
+                min_ano_nasc = 1900
+                max_ano_nasc = date.today().year
+
+                if dados_atuais and dados_atuais.get('ano_nascimento') is not None:
+                    ano_nascimento_prompt += f" (atual: {dados_atuais['ano_nascimento']})"
+                ano_nascimento_prompt += ": "
+
+                if dados_atuais:
+                    ano_str_input = input(ano_nascimento_prompt).strip()
+                    if not ano_str_input:
+                        ano_nascimento_final = dados_atuais.get('ano_nascimento')
+                    else:
+                        try:
+                            ano_val_input = int(ano_str_input)
+                            if min_ano_nasc <= ano_val_input <= max_ano_nasc:
+                                ano_nascimento_final = ano_val_input
+                            else:
+                                print(f"❌ Ano de nascimento fora do intervalo válido ({min_ano_nasc}-{max_ano_nasc}). Valor anterior mantido se existir.")
+                                ano_nascimento_final = dados_atuais.get('ano_nascimento')
+                        except ValueError:
+                            print("❌ Ano de nascimento inválido. Deve ser um número. Valor anterior mantido se existir.")
+                            ano_nascimento_final = dados_atuais.get('ano_nascimento')
+                else:
+                    ano_nascimento_final = le_num_inteiro(ano_nascimento_prompt, min_val=min_ano_nasc, max_val=max_ano_nasc)
+                
+                if ano_nascimento_final is None and not dados_atuais:
+                    print("Ano de Nascimento é obrigatório para novo membro e deve ser válido. Operação cancelada.")
+                    return None
+                
                 funcoes_permitidas = ["ator", "diretor", "jurado"]
                 funcao_final = None
 
@@ -115,6 +146,7 @@ class TelaCadastro:
                 retorno = {
                     "nome": nome_final,
                     "nacionalidade": nacionalidade_final,
+                    "ano_nascimento": ano_nascimento_final,
                     "funcao": funcao_final
                 }
                 if id_val is not None:
