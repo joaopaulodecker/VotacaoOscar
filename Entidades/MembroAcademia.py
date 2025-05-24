@@ -33,10 +33,3 @@ class MembroAcademia(PessoaAbstract):
     def funcao(self, funcao: str):
         self.__funcao = funcao
 
-    def __str__(self) -> str:
-        return f"ID Membro: {self.id}, Nome: {self.nome}, Nascimento: {self.data_nascimento}, Nacionalidade: {self.nacionalidade.nome if self.nacionalidade else 'N/A'}, Função: {self.funcao}"
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, MembroAcademia):
-            return NotImplemented
-        return self.id == other.id

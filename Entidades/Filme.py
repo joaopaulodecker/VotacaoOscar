@@ -8,6 +8,10 @@ class Filme:
     @property
     def id_filme(self) -> int:
         return self.__id_filme
+    
+    @id_filme.setter
+    def id_filme(self, id_filme: int):
+        self.__id_filme = id_filme
 
     @property
     def titulo(self) -> str:

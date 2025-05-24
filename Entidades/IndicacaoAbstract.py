@@ -15,6 +15,10 @@ class IndicacaoAbstract(ABC):
     @property
     def id_indicacao(self) -> int:
         return self.__id_indicacao
+    
+    @id_indicacao.setter
+    def id_indicacao(self, id_indicacao: int):
+        self.__id_indicacao = id_indicacao
 
     @property
     def membro_id(self) -> int:
