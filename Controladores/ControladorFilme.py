@@ -44,6 +44,8 @@ class ControladorFilmes:
                     self.excluir()
                 elif opcao == 4:
                     self.listar(mostrar_msg_voltar=True)
+                elif opcao == 5:
+                    self.listar_filmes_agrupados_por_nacionalidade(mostrar_msg_voltar=True)
                 elif opcao == 0:
                     break
             except OpcaoInvalida as e:
@@ -96,8 +98,8 @@ class ControladorFilmes:
         
         nome_diretor = f"ID {diretor_id_selecionado}" 
         ctrl_membros = self.__controlador_sistema.controlador_membros
-        if ctrl_membros and hasattr(ctrl_membros, 'buscar_por_id'): # CORRIGIDO AQUI
-            diretor_dict = ctrl_membros.buscar_por_id(diretor_id_selecionado) # CORRIGIDO AQUI
+        if ctrl_membros and hasattr(ctrl_membros, 'buscar_por_id'): 
+            diretor_dict = ctrl_membros.buscar_por_id(diretor_id_selecionado)
             if diretor_dict and diretor_dict.get('nome'):
                 nome_diretor = diretor_dict.get('nome')
         
@@ -121,8 +123,8 @@ class ControladorFilmes:
             prefixo = f"{filme.id_filme}. " if not com_indices else f"{i+1}. (ID: {filme.id_filme}) "
             
             nome_diretor_str = f"(Diretor ID: {filme.diretor_id})"
-            if ctrl_membros and hasattr(ctrl_membros, 'buscar_por_id'): # CORRIGIDO AQUI
-                diretor_dict = ctrl_membros.buscar_por_id(filme.diretor_id) # CORRIGIDO AQUI
+            if ctrl_membros and hasattr(ctrl_membros, 'buscar_por_id'): 
+                diretor_dict = ctrl_membros.buscar_por_id(filme.diretor_id)
                 if diretor_dict and diretor_dict.get('nome'):
                     nome_diretor_str = f"(Dir: {diretor_dict.get('nome')})"
             
@@ -135,6 +137,48 @@ class ControladorFilmes:
         if mostrar_msg_voltar:
             input("\n🔁 Pressione Enter para voltar ao menu...")
         return True
+
+    def listar_filmes_agrupados_por_nacionalidade(self, mostrar_msg_voltar=True):
+        if not self.__filmes:
+            print("📭 Nenhum filme cadastrado.")
+            if mostrar_msg_voltar:
+                input("\n🔁 Pressione Enter para voltar ao menu...")
+            return
+
+        filmes_por_nacionalidade = {}
+        for filme_obj in self.__filmes:
+            pais_nacionalidade = "Nacionalidade Desconhecida"
+            if filme_obj.nacionalidade and hasattr(filme_obj.nacionalidade, 'pais') and filme_obj.nacionalidade.pais:
+                pais_nacionalidade = filme_obj.nacionalidade.pais
+            
+            if pais_nacionalidade not in filmes_por_nacionalidade:
+                filmes_por_nacionalidade[pais_nacionalidade] = []
+            filmes_por_nacionalidade[pais_nacionalidade].append(filme_obj)
+
+        if not filmes_por_nacionalidade:
+            print("📭 Não foi possível agrupar filmes por nacionalidade.")
+            if mostrar_msg_voltar:
+                input("\n🔁 Pressione Enter para voltar ao menu...")
+            return
+
+        print("\n--- Filmes Agrupados por Nacionalidade ---")
+        ctrl_membros = self.__controlador_sistema.controlador_membros
+        
+        for pais in sorted(filmes_por_nacionalidade.keys()):
+            print(f"\n🌍 Nacionalidade: {pais}")
+            print("------------------------------------")
+            for filme_item in filmes_por_nacionalidade[pais]:
+                nome_diretor_str = f"(Diretor ID: {filme_item.diretor_id})"
+                if ctrl_membros and hasattr(ctrl_membros, 'buscar_por_id'):
+                    diretor_dict = ctrl_membros.buscar_por_id(filme_item.diretor_id)
+                    if diretor_dict and diretor_dict.get('nome'):
+                        nome_diretor_str = f"(Dir: {diretor_dict.get('nome')})"
+                
+                print(f"  ID: {filme_item.id_filme}. 🎬 {filme_item.titulo} ({filme_item.ano}) {nome_diretor_str}")
+        
+        if mostrar_msg_voltar:
+            input("\n🔁 Pressione Enter para voltar ao menu...")
+
 
     def alterar(self):
         print("\n--- Alteração de Filme ---")
@@ -162,8 +206,8 @@ class ControladorFilmes:
 
         ctrl_membros = self.__controlador_sistema.controlador_membros
         nome_diretor_atual = "N/A"
-        if ctrl_membros and hasattr(ctrl_membros, 'buscar_por_id'): # CORRIGIDO AQUI
-            diretor_atual_dict = ctrl_membros.buscar_por_id(filme_alvo.diretor_id) # CORRIGIDO AQUI
+        if ctrl_membros and hasattr(ctrl_membros, 'buscar_por_id'):
+            diretor_atual_dict = ctrl_membros.buscar_por_id(filme_alvo.diretor_id)
             if diretor_atual_dict and diretor_atual_dict.get('nome'):
                 nome_diretor_atual = diretor_atual_dict.get('nome')
         
@@ -180,7 +224,7 @@ class ControladorFilmes:
             "titulo": filme_alvo.titulo, 
             "ano": filme_alvo.ano,
             "diretor_id": filme_alvo.diretor_id,
-            "nacionalidade": filme_alvo.nacionalidade
+            "nacionalidade": filme_alvo.nacionalidade 
         }
         novos_dados = self.__tela_filmes.le_dados_filme(dados_atuais=dados_atuais_filme, diretores_disponiveis=lista_diretores)
 
@@ -214,8 +258,8 @@ class ControladorFilmes:
         filme_alvo.nacionalidade = novos_dados["nacionalidade_obj"]
 
         novo_nome_diretor = f"ID {novos_dados['diretor_id']}"
-        if ctrl_membros and hasattr(ctrl_membros, 'buscar_por_id'): # CORRIGIDO AQUI
-            diretor_dict = ctrl_membros.buscar_por_id(novos_dados["diretor_id"]) # CORRIGIDO AQUI
+        if ctrl_membros and hasattr(ctrl_membros, 'buscar_por_id'):
+            diretor_dict = ctrl_membros.buscar_por_id(novos_dados["diretor_id"])
             if diretor_dict and diretor_dict.get('nome'):
                 novo_nome_diretor = diretor_dict.get('nome')
         

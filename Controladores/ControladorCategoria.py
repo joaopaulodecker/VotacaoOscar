@@ -1,7 +1,6 @@
 from Entidades.Categoria import Categoria
 from Limites.TelaCategoria import TelaCategoria
 from Controladores.ControladorCadastro import ControladorCadastro
-from Excecoes.OpcaoInvalida import OpcaoInvalida
 
 class ControladorCategorias(ControladorCadastro):
     def __init__(self):

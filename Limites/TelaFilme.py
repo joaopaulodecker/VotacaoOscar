@@ -9,15 +9,16 @@ class TelaFilmes:
         print("2 - Alterar Filme")
         print("3 - Excluir Filme")
         print("4 - Listar Filmes")
+        print("5 - Listar Filmes por Nacionalidade")
         print("0 - Voltar")
 
         while True:
             opcao_str = input("Escolha a opção: ").strip()
             if opcao_str.isdigit():
                 valor = int(opcao_str)
-                if 0 <= valor <= 4:
+                if 0 <= valor <= 5:
                     return valor
-            raise OpcaoInvalida("Opção de menu de filmes inválida. Escolha entre 0 e 4.")
+            raise OpcaoInvalida("Opção de menu de filmes inválida. Escolha entre 0 e 5.")
 
     def le_dados_filme(self, dados_atuais=None, diretores_disponiveis=None):
         print("\n--- Dados do Filme ---")
@@ -79,7 +80,7 @@ class TelaFilmes:
                     nacionalidade_obj_final = dados_atuais.get('nacionalidade')
                 else:
                     nacionalidade_obj_final = Nacionalidade(pais_input_str.title())
-        else:
+        else: 
             pais_input_str = ""
             while True:
                 pais_input_str = input(nacionalidade_prompt).strip()
@@ -185,6 +186,7 @@ class TelaFilmes:
         if filme.nacionalidade and hasattr(filme.nacionalidade, 'pais'):
             nacionalidade_str = filme.nacionalidade.pais
         print(f"   Nacionalidade: {nacionalidade_str}")
+
         if nome_diretor:
             print(f"   Diretor: {nome_diretor}")
         elif filme.diretor_id is not None:

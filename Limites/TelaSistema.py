@@ -1,4 +1,3 @@
-from Utils.validadores import le_num_inteiro
 from Excecoes.OpcaoInvalida import OpcaoInvalida
 
 class TelaSistema:

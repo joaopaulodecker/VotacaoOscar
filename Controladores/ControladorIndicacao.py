@@ -1,5 +1,4 @@
 from Limites.TelaIndicacao import TelaIndicacao
-from Entidades.IndicacaoAbstract import IndicacaoAbstract
 from Entidades.IndFilme import IndFilme
 from Entidades.IndAtor import IndAtor
 from Entidades.IndDiretor import IndDiretor

@@ -1,10 +1,6 @@
 from Limites.TelaVotacao import TelaVotacao
 from Entidades.Voto import Voto
 from Entidades.Categoria import Categoria
-from Entidades.IndicacaoAbstract import IndicacaoAbstract
-from Entidades.IndFilme import IndFilme
-from Entidades.IndAtor import IndAtor
-from Entidades.IndDiretor import IndDiretor
 from collections import Counter
 
 class ControladorVotacao:
