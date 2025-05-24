@@ -14,15 +14,16 @@ class TelaSistema:
         print("6 - Gerenciar Indicações")
         print("7 - Gerenciar Votação")
         print("8 - Ver Resultados da Votação")
+        print("9 - Encerrar Indicações / Abrir Votação")
         print("0 - Sair do Sistema")
         
         while True:
             opcao_str = input("Escolha uma opção: ").strip()
             if opcao_str.isdigit():
                 opcao = int(opcao_str)
-                if 0 <= opcao <= 8:
+                if 0 <= opcao <= 9:
                     return opcao
-            raise OpcaoInvalida("Opção de menu principal inválida. Escolha entre 0 e 8.")
+            raise OpcaoInvalida("Opção de menu principal inválida. Escolha entre 0 e 9.")
 
     def mostra_mensagem(self, msg: str):
         print(f"\n{msg}")

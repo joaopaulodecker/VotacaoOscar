@@ -1,10 +1,13 @@
 from Limites.TelaVotacao import TelaVotacao
 from Entidades.Voto import Voto
 from Entidades.Categoria import Categoria
+from Excecoes.OpcaoInvalida import OpcaoInvalida
 from collections import Counter
 
+
 class ControladorVotacao:
-    def __init__(self, controlador_membros, controlador_categorias, controlador_filmes, controlador_indicacao):
+    def __init__(self, controlador_sistema, controlador_membros, controlador_categorias, controlador_filmes, controlador_indicacao):
+        self.__controlador_sistema = controlador_sistema
         self.__tela_votacao = TelaVotacao()
         self.__controlador_membros = controlador_membros
         self.__controlador_categorias = controlador_categorias
@@ -19,6 +22,14 @@ class ControladorVotacao:
         return id_atual
 
     def iniciar_votacao(self):
+        if self.__controlador_sistema.fase_atual_premiacao != self.__controlador_sistema.FASE_VOTACAO_ABERTA:
+            if self.__controlador_sistema.fase_atual_premiacao == self.__controlador_sistema.FASE_INDICACOES_ABERTAS:
+                print("\n❌ A votação ainda não pode começar. O período de indicações precisa ser encerrado primeiro.")
+            else:
+                print("\n❌ A votação não está disponível nesta fase da premiação.")
+            input("🔁 Pressione Enter para continuar...")
+            return
+
         print("\n--- Iniciar Votação ---")
 
         membros = self.__controlador_membros.entidades
@@ -33,6 +44,7 @@ class ControladorVotacao:
             input("🔁 Pressione Enter para continuar...")
             return
         membro_id_votante = membro_votante_dict.get("id")
+        funcao_membro_votante = membro_votante_dict.get("funcao", "").lower()
 
         categorias_objs = self.__controlador_categorias.entidades
         if not categorias_objs:
@@ -46,42 +58,33 @@ class ControladorVotacao:
             input("🔁 Pressione Enter para continuar...")
             return
 
+        if categoria_obj_selecionada.tipo_indicacao == "diretor" and funcao_membro_votante != "diretor":
+            print(f"❌ Apenas membros com a função 'Diretor' podem votar na categoria '{categoria_obj_selecionada.nome}'.")
+            sua_funcao_display = funcao_membro_votante.capitalize() if funcao_membro_votante else "Não definida"
+            print(f"   Sua função é: {sua_funcao_display}.")
+            input("🔁 Pressione Enter para continuar...")
+            return
+
         for voto_existente in self.__votos_registrados:
             if voto_existente.membro_id == membro_id_votante and voto_existente.categoria.id == categoria_obj_selecionada.id:
                 print(f"⚠️ O membro ID {membro_id_votante} já votou na categoria '{categoria_obj_selecionada.nome}'.")
                 input("🔁 Pressione Enter para continuar...")
                 return
         
-        indicacoes_para_categoria = [
-            ind for ind in self.__controlador_indicacao._ControladorIndicacao__indicacoes
-            if ind.categoria.id == categoria_obj_selecionada.id
-        ]
+        finalistas_para_votacao = self.__controlador_indicacao.get_finalistas_por_categoria(
+            categoria_obj_selecionada.id, 
+            limite=5
+        )
 
-        if not indicacoes_para_categoria:
-            print(f"❌ Não há indicados para a categoria '{categoria_obj_selecionada.nome}'.")
+        if not finalistas_para_votacao:
+            print(f"❌ Não há finalistas suficientes ou nenhuma indicação para a categoria '{categoria_obj_selecionada.nome}'.")
             input("🔁 Pressione Enter para continuar...")
             return
 
-        itens_indicados_para_tela = []
-        for indicacao_obj in indicacoes_para_categoria:
-            item = indicacao_obj.item_indicado 
-            tipo_item = indicacao_obj.tipo_item_indicado
-            item_id = indicacao_obj.item_indicado_id
-            
-            nome_display = "Item Desconhecido"
-            if tipo_item == "filme" and hasattr(item, 'titulo'):
-                nome_display = item.titulo
-            elif tipo_item in ["ator", "diretor"] and isinstance(item, dict) and 'nome' in item:
-                nome_display = item.get('nome')
-            
-            itens_indicados_para_tela.append({
-                "id_original_indicado": item_id,
-                "nome_display": nome_display,
-                "tipo_original_indicado": tipo_item,
-                "objeto_indicacao_completo": indicacao_obj
-            })
-
-        indicado_escolhido_dict_tela = self.__tela_votacao.seleciona_indicado_para_voto(itens_indicados_para_tela, categoria_obj_selecionada.nome)
+        indicado_escolhido_dict_tela = self.__tela_votacao.seleciona_indicado_para_voto(
+            finalistas_para_votacao, 
+            categoria_obj_selecionada.nome
+        )
 
         if not indicado_escolhido_dict_tela:
             print("ℹ️ Votação cancelada ou nenhum indicado selecionado.")
@@ -122,6 +125,7 @@ class ControladorVotacao:
                     "nome_categoria": voto_obj.categoria.nome,
                     "contagem_votos": Counter()
                 }
+            
             nome_item_votado = "Item Desconhecido"
             if voto_obj.tipo_item_indicado == "filme":
                 filme = self.__controlador_filmes.buscar_filme_por_id(voto_obj.item_indicado_id)
@@ -140,22 +144,29 @@ class ControladorVotacao:
             for cat_id, dados_cat in resultados_por_categoria.items():
                 print(f"\n🏆 Categoria: {dados_cat['nome_categoria']}")
                 if not dados_cat["contagem_votos"]:
-                    print("  Nenhum voto nesta categoria.")
+                    print("   Nenhum voto nesta categoria.")
                     continue
                 
                 votos_ordenados = sorted(dados_cat["contagem_votos"].items(), key=lambda item: item[1], reverse=True)
                 
                 for item_nome_id, contagem in votos_ordenados:
-                    print(f"  - {item_nome_id}: {contagem} voto(s)")
+                    print(f"   - {item_nome_id}: {contagem} voto(s)")
         
         input("🔁 Pressione Enter para continuar...")
 
     def abrir_menu_votacao(self):
         while True:
-            opcao = self.__tela_votacao.mostra_opcoes_votacao()
-            if opcao == 1:
-                self.iniciar_votacao()
-            elif opcao == 2:
-                self.mostrar_resultados()
-            elif opcao == 0:
-                break
+            try: 
+                opcao = self.__tela_votacao.mostra_opcoes_votacao()
+                if opcao == 1:
+                    self.iniciar_votacao()
+                elif opcao == 2:
+                    self.mostrar_resultados()
+                elif opcao == 0:
+                    break
+            except OpcaoInvalida as e: 
+                print(f"❌ {e}")
+                input("🔁 Pressione Enter para continuar...")
+            except Exception as e:
+                print(f"❌ Erro inesperado no menu de votação: {e}")
+                input("🔁 Pressione Enter para continuar...")
