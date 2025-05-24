@@ -1,5 +1,6 @@
 from Excecoes.OpcaoInvalida import OpcaoInvalida
 from Utils.validadores import le_num_inteiro
+from Entidades.Nacionalidade import Nacionalidade
 
 class TelaFilmes:
     def mostra_opcoes(self):
@@ -57,6 +58,43 @@ class TelaFilmes:
         except ValueError:
             print("❌ Ano inválido. Deve ser um número inteiro.")
             return None
+
+        nacionalidade_obj_final = None
+        nacionalidade_prompt = "Nacionalidade do Filme (país)"
+        current_nacionalidade_pais = ""
+
+        if dados_atuais and dados_atuais.get('nacionalidade') is not None:
+            if isinstance(dados_atuais.get('nacionalidade'), Nacionalidade):
+                current_nacionalidade_pais = dados_atuais.get('nacionalidade').pais
+                nacionalidade_prompt += f" (atual: {current_nacionalidade_pais})"
+        nacionalidade_prompt += ": "
+
+        if dados_atuais:
+            pais_input_str = input(nacionalidade_prompt).strip()
+            if not pais_input_str:
+                nacionalidade_obj_final = dados_atuais.get('nacionalidade')
+            else:
+                if not pais_input_str.replace(" ", "").isalpha():
+                    print("❌ Nacionalidade (país) deve conter apenas letras e espaços. Mantendo anterior se houver.")
+                    nacionalidade_obj_final = dados_atuais.get('nacionalidade')
+                else:
+                    nacionalidade_obj_final = Nacionalidade(pais_input_str.title())
+        else:
+            pais_input_str = ""
+            while True:
+                pais_input_str = input(nacionalidade_prompt).strip()
+                if not pais_input_str:
+                    print("❌ Nacionalidade (país) é obrigatória. Tente novamente.")
+                elif not pais_input_str.replace(" ", "").isalpha():
+                    print("❌ Nacionalidade (país) deve conter apenas letras e espaços. Tente novamente.")
+                else:
+                    break 
+            nacionalidade_obj_final = Nacionalidade(pais_input_str.title())
+        
+        dados_coletados["nacionalidade_obj"] = nacionalidade_obj_final
+        if dados_coletados.get("nacionalidade_obj") is None and not dados_atuais:
+             print("❌ Nacionalidade deve ser fornecida para o novo filme.")
+             return None
 
         selected_diretor_id = None
         if diretores_disponiveis and len(diretores_disponiveis) > 0:
@@ -142,6 +180,11 @@ class TelaFilmes:
         print(f"   ID: {filme.id_filme}")
         print(f"   Título: {filme.titulo}")
         print(f"   Ano: {filme.ano}")
+        
+        nacionalidade_str = "Não especificada"
+        if filme.nacionalidade and hasattr(filme.nacionalidade, 'pais'):
+            nacionalidade_str = filme.nacionalidade.pais
+        print(f"   Nacionalidade: {nacionalidade_str}")
         if nome_diretor:
             print(f"   Diretor: {nome_diretor}")
         elif filme.diretor_id is not None:
