@@ -8,6 +8,16 @@ from Entidades.Filme import Filme
 from collections import Counter
 
 class ControladorIndicacao:
+    """ Gerencia todo o processo de indicações no sistema do Oscar.
+
+    Esta classe é responsável por:
+    - Permitir que membros da academia registrem novas indicações para filmes,
+      atores ou diretores em categorias específicas.
+    - Validar se as indicações são permitidas (fase correta da premiação,
+      compatibilidade entre item e categoria).
+    - Armazenar e listar as indicações realizadas.
+    - Determinar os finalistas para cada categoria com base no número de indicações recebidas.
+"""
     def __init__(self, controlador_sistema, controlador_membros, controlador_categorias, controlador_filmes):
         self.__controlador_sistema = controlador_sistema 
         self.__tela_indicacao = TelaIndicacao()
@@ -18,11 +28,22 @@ class ControladorIndicacao:
         self.__proximo_id_indicacao = 1
 
     def _gerar_proximo_id_indicacao(self):
+        """Gera um novo ID incremental para uma indicação.
+        Retorna:
+            int: O próximo ID disponível.
+        """
         id_atual = self.__proximo_id_indicacao
         self.__proximo_id_indicacao += 1
         return id_atual
 
     def iniciar_indicacao(self):
+        """
+            Conduz o processo de registro de uma nova indicação.
+           Verifica a fase da premiação, coleta dados do membro, categoria e item a ser indicado
+           através da tela. Valida a compatibilidade e, se tudo estiver correto,
+           cria e armazena o objeto de indicação apropriado (IndFilme, IndAtor ou IndDiretor).
+               """
+        # Verifica se o sistema está na fase correta para aceitar indicações.
         if self.__controlador_sistema.fase_atual_premiacao != self.__controlador_sistema.FASE_INDICACOES_ABERTAS:
             print("\n❌ O período de indicações já foi encerrado ou a premiação está em outra fase.")
             input("🔁 Pressione Enter para continuar...")
@@ -37,6 +58,7 @@ class ControladorIndicacao:
             input("🔁 Pressione Enter para continuar...")
             return
 
+        #### Seleção do membro que está fazendo a indicação.
         membro_selecionado_dict = self.__tela_indicacao.seleciona_membro(membros)
         if not membro_selecionado_dict:
             print("ℹ️ Seleção de membro cancelada.")
@@ -44,6 +66,7 @@ class ControladorIndicacao:
             return
         membro_id = membro_selecionado_dict.get("id")
 
+        ### Seleção da categoria para a qual a indicação será feita.
         categorias_objs = self.__controlador_categorias.entidades
         if not categorias_objs:
             print("❌ Nenhuma categoria cadastrada para indicação.")
@@ -55,7 +78,8 @@ class ControladorIndicacao:
             print("ℹ️ Seleção de categoria cancelada ou inválida.")
             input("🔁 Pressione Enter para continuar...")
             return
-        
+
+        ### Validação do tipo de item indicado versus o tipo esperado pela categoria.
         tipo_item_permitido_pela_categoria = categoria_obj_selecionada.tipo_indicacao.lower()
         print(f"ℹ️ Esta categoria ('{categoria_obj_selecionada.nome}') aceita indicações do tipo: {tipo_item_permitido_pela_categoria.capitalize()}")
 
@@ -77,6 +101,7 @@ class ControladorIndicacao:
         item_indicado_id = None
         nome_display_item_indicado = "Item Desconhecido"
 
+        ### Bloco condicional para selecionar o item específico (Filme, Ator, Diretor).
         if tipo_item_permitido_pela_categoria == "filme":
             filmes_objs = self.__controlador_filmes.filmes
             if not filmes_objs:
@@ -128,6 +153,7 @@ class ControladorIndicacao:
             input("🔁 Pressione Enter para continuar...")
             return
 
+        ###Verifica se este membro já fez esta indicação específica para esta categoria.
         for indicacao_existente in self.__indicacoes:
             if (indicacao_existente.membro_id == membro_id and
                 indicacao_existente.categoria.id == categoria_obj_selecionada.id and
@@ -160,6 +186,10 @@ class ControladorIndicacao:
         input("🔁 Pressione Enter para continuar...")
 
     def listar_indicacoes_por_categoria(self):
+        """
+        Permite ao usuário selecionar uma categoria e lista todas as indicações
+        registradas para ela.
+        """
         print("\n--- Indicações por Categoria ---")
         categorias_objs = self.__controlador_categorias.entidades
         if not categorias_objs:
@@ -176,6 +206,8 @@ class ControladorIndicacao:
         print(f"\nIndicados para: {categoria_obj_selecionada.nome} (ID: {categoria_obj_selecionada.id})")
         
         indicacoes_na_categoria = []
+
+        ### Acessa as indicações diretamente do objeto Categoria, se disponível.
         if hasattr(categoria_obj_selecionada, 'indicacoes'):
             indicacoes_na_categoria = categoria_obj_selecionada.indicacoes
         else:
@@ -196,6 +228,24 @@ class ControladorIndicacao:
         input("🔁 Pressione Enter para continuar...")
 
     def get_finalistas_por_categoria(self, categoria_id: int, limite: int = 5) -> list[dict]:
+        """
+           Determina os finalistas para uma dada categoria com base no número de indicações.
+
+           Conta as indicações para cada item único (ID e tipo) dentro da categoria.
+           Os itens com mais indicações são selecionados como finalistas, respeitando
+           um limite e regras de desempate (incluindo todos os empatados na última posição do limite).
+
+           Parâmetros:
+               categoria_id (int): O ID da categoria para a qual os finalistas serão determinados.
+               limite (int): O número máximo desejado de finalistas. Default é 5.
+
+           Retorna:
+               list[dict]: Uma lista de dicionários, onde cada dicionário representa um
+                           finalista e contém 'id_original_indicado', 'nome_display',
+                           e 'tipo_original_indicado'.
+        """
+
+        ### Filtra todas as indicações pertencentes à categoria especificada.
         indicacoes_da_categoria = [
             ind for ind in self.__indicacoes 
             if ind.categoria.id == categoria_id
@@ -204,13 +254,15 @@ class ControladorIndicacao:
         if not indicacoes_da_categoria:
             return []
 
+        ### Usa Counter para contar ocorrências de cada item indicado (por ID e tipo).
         contagem_itens = Counter()
         itens_info_map = {} 
 
         for ind in indicacoes_da_categoria:
             chave_item = (ind.item_indicado_id, ind.tipo_item_indicado)
             contagem_itens[chave_item] += 1
-            
+
+            ### Armazena informações detalhadas do item para exibição posterior, evitando duplicidade.
             if chave_item not in itens_info_map:
                 nome_display = "Item Desconhecido"
                 obj_real_indicado = ind.item_indicado 
@@ -229,13 +281,18 @@ class ControladorIndicacao:
         if not contagem_itens:
             return []
 
+        ###Obtém os itens mais indicados, ordenados pela contagem
         todos_itens_ordenados_com_contagem = contagem_itens.most_common()
         
         finalistas_chaves = []
+
+        ### Lógica para selecionar os finalistas, incluindo empates na linha de corte.
         if len(todos_itens_ordenados_com_contagem) <= limite:
+            #### Se o número total de itens únicos indicados for menor ou igual ao limite, todos são finalistas.
             for chave, _ in todos_itens_ordenados_com_contagem:
                 finalistas_chaves.append(chave)
         else:
+            ### Se houver mais itens do que o limite, pega os 'limite' primeiros e verifica empates.
             contagem_de_corte = todos_itens_ordenados_com_contagem[limite - 1][1]
             for chave, contagem_atual in todos_itens_ordenados_com_contagem:
                 if contagem_atual >= contagem_de_corte:
@@ -252,6 +309,12 @@ class ControladorIndicacao:
         return finalistas
 
     def abrir_menu_indicacoes(self):
+        """
+        Exibe o menu de indicações e processa a escolha do usuário.
+
+        Permite ao usuário registrar novas indicações ou listar indicações existentes
+        até que ele escolha a opção de voltar.
+        """
         while True:
             try:
                 opcao = self.__tela_indicacao.mostra_opcoes_indicacao()

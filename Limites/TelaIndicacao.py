@@ -10,6 +10,7 @@ class TelaIndicacao:
         print("1 - Registrar Nova Indicação")
         print("2 - Listar Indicações por Categoria")
         print("0 - Voltar ao Menu Principal")
+        print("0 - Voltar ao Menu Principal")
         while True:
             opcao_str = input("Escolha a opção: ").strip()
             if opcao_str.isdigit():

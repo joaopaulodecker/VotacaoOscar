@@ -14,6 +14,8 @@ class ControladorFilmes:
         return self.__filmes
 
     def _gerar_proximo_id(self):
+        """Gera um ID automático e padronizado para Filmes, somando 1 a cada Filme
+        cadastrado"""
         id_atual = self.__proximo_id
         self.__proximo_id += 1
         return id_atual
@@ -25,6 +27,7 @@ class ControladorFilmes:
         return None
 
     def existe_titulo_filme(self, titulo, id_excluir=None):
+        """Verifica se já existe um título cadastrado no sistema"""
         for filme in self.__filmes:
             if id_excluir is not None and filme.id_filme == id_excluir:
                 continue
@@ -56,6 +59,7 @@ class ControladorFilmes:
                 input("🔁 Pressione Enter para continuar...")
 
     def cadastrar(self):
+        """Realiza o cadastro de um novo Filme"""
         print("\n--- Cadastro de Novo Filme ---")
         
         lista_diretores = self.__controlador_sistema.controlador_membros.buscar_por_funcao("diretor")
