@@ -1,5 +1,4 @@
 import Entidades.Voto
-from Entidades.IndicacaoAbstract import IndicacaoAbstract
 
 class Categoria:
     TIPOS_VALIDOS = ("ator", "diretor", "filme")
@@ -10,7 +9,6 @@ class Categoria:
             raise ValueError(f"Tipo de indicação inválido: '{tipo_indicacao}'")
         self.__id = id_categoria
         self.__nome = nome
-        self.__indicacoes = []
         self.__votos = []
 
     @property
@@ -18,8 +16,8 @@ class Categoria:
         return self.__id
     
     @id.setter
-    def id(self, id: int):
-        self.__id = id
+    def id(self, id_val: int):
+        self.__id = id_val
 
     @property
     def nome(self) -> str:
@@ -30,27 +28,20 @@ class Categoria:
         self.__nome = nome
 
     @property
-    def indicacoes(self) -> list:
-        return self.__indicacoes
-
-    @property
     def votos(self) -> list:
         return self.__votos
+    
+    @votos.setter
+    def votos(self, votos: list):
+        self.__votos = votos
 
     @property
     def tipo_indicacao(self) -> str:
         return self.__tipo
 
-    def adicionar_indicacao(self, indicacao):
-        if isinstance(indicacao, IndicacaoAbstract):
-            self.__indicacoes.append(indicacao)
-
     def adicionar_voto(self, voto):
-        if isinstance(voto, Entidades.Voto.Voto):
+        if isinstance(voto, Entidades.Voto.Voto): 
             self.__votos.append(voto)
-
-    def total_de_indicacoes(self) -> int:
-        return len(self.__indicacoes)
 
     def total_de_votos(self) -> int:
         return len(self.__votos)

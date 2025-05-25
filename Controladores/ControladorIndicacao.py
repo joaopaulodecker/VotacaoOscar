@@ -179,8 +179,6 @@ class ControladorIndicacao:
             return
 
         self.__indicacoes.append(nova_indicacao_obj)
-        if hasattr(categoria_obj_selecionada, 'adicionar_indicacao'):
-            categoria_obj_selecionada.adicionar_indicacao(nova_indicacao_obj)
 
         print(f"✅ Indicação de '{nome_display_item_indicado}' para '{categoria_obj_selecionada.nome}' registrada com sucesso!")
         input("🔁 Pressione Enter para continuar...")
@@ -205,13 +203,10 @@ class ControladorIndicacao:
         
         print(f"\nIndicados para: {categoria_obj_selecionada.nome} (ID: {categoria_obj_selecionada.id})")
         
-        indicacoes_na_categoria = []
-
-        ### Acessa as indicações diretamente do objeto Categoria, se disponível.
-        if hasattr(categoria_obj_selecionada, 'indicacoes'):
-            indicacoes_na_categoria = categoria_obj_selecionada.indicacoes
-        else:
-            indicacoes_na_categoria = [ind for ind in self.__indicacoes if ind.categoria.id == categoria_obj_selecionada.id]
+        indicacoes_na_categoria = [
+            ind for ind in self.__indicacoes 
+            if ind.categoria.id == categoria_obj_selecionada.id
+        ]
 
         if not indicacoes_na_categoria:
             print("   Nenhuma indicação para esta categoria ainda.")
