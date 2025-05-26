@@ -51,15 +51,23 @@ class ControladorIndicacao:
 
         print("\n--- Nova Indicação ---")
 
-        membros = self.__controlador_membros.entidades 
+        # Pega todos os membros
+        todos_os_membros = self.__controlador_membros.entidades
 
-        if not membros:
-            print("❌ Nenhum membro da academia cadastrado para fazer indicações.")
-            input("🔁 Pressione Enter para continuar...")
+        # Filtra para pegar apenas os jurados que podem realizar a indicação
+        membros_aptos_a_indicar = [m for m in todos_os_membros if m.get("funcao") == "jurado"]  #
+
+        if not membros_aptos_a_indicar:  #
+            print("❌ Nenhum membro da academia com função 'jurado' cadastrado para fazer indicações.")
+            input("🔁 Pressione Enter para continuar...")  #
             return
 
-        #### Seleção do membro que está fazendo a indicação.
-        membro_selecionado_dict = self.__tela_indicacao.seleciona_membro(membros)
+        # Seleção do membro (jurado) que está fazendo a indicação.
+        # Passa a lista filtrada para a tela
+        membro_selecionado_dict = self.__tela_indicacao.seleciona_membro(
+            membros_aptos_a_indicar)  # Nome da variável alterado aqui
+
+        membro_selecionado_dict = self.__tela_indicacao.seleciona_membro(membros_aptos_a_indicar)  #
         if not membro_selecionado_dict:
             print("ℹ️ Seleção de membro cancelada.")
             input("🔁 Pressione Enter para continuar...")
