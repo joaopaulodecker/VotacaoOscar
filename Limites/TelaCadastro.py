@@ -3,6 +3,11 @@ from Excecoes.OpcaoInvalida import OpcaoInvalida
 from datetime import date
 
 class TelaCadastro:
+    """ Interface de usuário genérica para operações de cadastro (CRUD)
+    de diferentes tipos de entidades (e.g., membro, categoria).
+
+    O tipo de entidade é definido no construtor e usado para
+    personalizar as mensagens exibidas ao usuário."""
     def __init__(self, tipo):
         self.__tipo = tipo
 
@@ -20,6 +25,15 @@ class TelaCadastro:
         return opcao
 
     def pegar_dados(self, dados_atuais=None):
+        """Coleta os dados para cadastro ou alteração de uma entidade.
+
+        Se `dados_atuais` for fornecido, opera em modo de alteração,
+        permitindo manter valores atuais ao deixar campos em branco.
+        Caso contrário, opera em modo de cadastro.
+
+        A coleta de dados é específica para o `__tipo` de entidade
+        (membro, categoria, etc.)."""
+
         if dados_atuais:
             print(f"\n--- Alteração de {self.__tipo.capitalize()} (ID: {dados_atuais.get('id', 'N/A')}) ---")
             print("Deixe o campo em branco para manter o valor atual (quando aplicável).")

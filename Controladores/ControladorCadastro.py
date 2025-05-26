@@ -3,7 +3,22 @@ from Excecoes.OpcaoInvalida import OpcaoInvalida
 from datetime import date
 
 class ControladorCadastro:
+    """
+    Controlador genérico responsável pelas operações de Cadastro, Leitura,
+    Atualização e Exclusão (CRUD) de uma entidade específica.
+
+    A entidade gerenciada é definida pelo `tipo_entidade` passado
+    durante a inicialização. Interage com `TelaCadastro` para a
+    entrada e saída de dados do usuário.
+    """
     def __init__(self, tipo_entidade):
+        """Inicializa o controlador para um tipo específico de entidade.
+
+        Args:
+            tipo_entidade (str): O nome do tipo de entidade que este
+                                 controlador irá gerenciar (e.g., "membro", "categoria").
+                                 Este nome é usado em mensagens para o usuário.
+        """
         self.__tipo_entidade = tipo_entidade
         self.__tela = TelaCadastro(tipo_entidade)
         self.__entidades = []
@@ -11,14 +26,34 @@ class ControladorCadastro:
 
     @property
     def entidades(self):
+        """
+        Retorna a lista de entidades gerenciadas por este controlador.
+
+        Returns:
+            list: Uma lista contendo as entidades (atualmente como dicionários
+                  ou objetos, dependendo da implementação da subclasse).
+        """
         return self.__entidades
 
     def _gerar_proximo_id(self):
+        """
+        Gera um ID numérico sequencial para uma nova entidade.
+
+        Returns:
+            int: O próximo ID disponível.
+        """
         id_atual = self.__proximo_id
         self.__proximo_id += 1
         return id_atual
 
     def abrir_menu(self):
+        """
+        Exibe o menu principal de cadastro para a entidade gerenciada
+        e processa a escolha do usuário (Cadastrar, Alterar, Excluir, Listar).
+
+        O loop continua até que o usuário escolha a opção de voltar (0).
+        Trata OpcaoInvalida levantada pela tela.
+        """
         while True:
             try:
                 opcao = self.__tela.mostrar_menu()
@@ -37,6 +72,10 @@ class ControladorCadastro:
                 input("🔁 Pressione Enter para tentar novamente...")
 
     def cadastrar(self):
+        """
+        Solicita os dados de uma nova entidade através da tela e a adiciona
+        à lista de entidades gerenciadas, atribuindo um novo ID.
+        """
         print(f"\n--- Cadastro de Novo {self.__tipo_entidade.capitalize()} ---")
         dados = self.__tela.pegar_dados()
         if dados:
@@ -64,11 +103,11 @@ class ControladorCadastro:
             if entidade.get("id") == id_alvo:
                 entidade_encontrada = entidade
                 break
-        
+
         if entidade_encontrada:
             print(f"\nEditando dados do(a) {self.__tipo_entidade} com ID: {id_alvo}")
             novos_dados = self.__tela.pegar_dados(dados_atuais=entidade_encontrada)
-            
+
             if novos_dados:
                 novos_dados.pop('id', None)
                 entidade_encontrada.update(novos_dados)
@@ -77,7 +116,7 @@ class ControladorCadastro:
                 print("ℹ️ Nenhuma alteração realizada.")
         else:
             print(f"❌ {self.__tipo_entidade.capitalize()} com ID {id_alvo} não encontrado.")
-        
+
         input("🔁 Pressione Enter para continuar...")
 
     def excluir(self):
@@ -100,16 +139,27 @@ class ControladorCadastro:
                 entidade_para_excluir = entidade
                 indice_entidade = i
                 break
-        
+
         if entidade_para_excluir:
             del self.__entidades[indice_entidade]
             print("🗑️ Registro excluído com sucesso!")
         else:
             print(f"❌ {self.__tipo_entidade.capitalize()} com ID {id_alvo} não encontrado.")
-        
+
         input("🔁 Pressione Enter para continuar...")
 
     def listar(self, mostrar_msg_voltar=False):
+        """
+        Lista todas as entidades cadastradas na tela.
+
+        Args:
+            mostrar_msg_voltar (bool, optional): Se True, exibe uma mensagem
+                                                 para o usuário pressionar Enter
+                                                 para voltar ao menu após a listagem.
+                                                 Default é False.
+        Returns:
+            bool: True se houver entidades para listar, False caso contrário.
+        """
         if not self.__entidades:
             print(f"📭 Nenhum(a) {self.__tipo_entidade} cadastrado(a).")
             if mostrar_msg_voltar:
@@ -121,14 +171,14 @@ class ControladorCadastro:
             for entidade in self.__entidades:
                 id_entidade = entidade.get('id', 'N/A')
                 nome_entidade = entidade.get('nome', 'N/A')
-                
+
                 info_str = f"ID: {id_entidade} | Nome: {nome_entidade}"
-                
+
                 if self.__tipo_entidade == "membro":
                     funcao_entidade = entidade.get('funcao', '')
                     if funcao_entidade:
                         info_str += f" | Função: {funcao_entidade.capitalize()}"
-                    
+
                     ano_nascimento = entidade.get('ano_nascimento')
                     if ano_nascimento:
                         try:

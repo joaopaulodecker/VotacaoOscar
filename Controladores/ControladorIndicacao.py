@@ -17,7 +17,7 @@ class ControladorIndicacao:
       compatibilidade entre item e categoria).
     - Armazenar e listar as indicações realizadas.
     - Determinar os finalistas para cada categoria com base no número de indicações recebidas.
-"""
+    """
     def __init__(self, controlador_sistema, controlador_membros, controlador_categorias, controlador_filmes):
         self.__controlador_sistema = controlador_sistema 
         self.__tela_indicacao = TelaIndicacao()

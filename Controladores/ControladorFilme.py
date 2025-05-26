@@ -3,6 +3,14 @@ from Limites.TelaFilme import TelaFilmes
 from Excecoes.OpcaoInvalida import OpcaoInvalida
 
 class ControladorFilmes:
+    """
+    Gerencia as operações CRUD (Cadastro, Leitura, Atualização, Exclusão)
+    e listagens relacionadas a filmes no sistema.
+
+    Interage com `TelaFilmes` para a entrada e saída de dados do usuário
+    e com `ControladorSistema` para acessar outros controladores, como o de membros
+    (para obter informações de diretores).
+    """
     def __init__(self, controlador_sistema):
         self.__filmes = []
         self.__tela_filmes = TelaFilmes()
@@ -11,16 +19,31 @@ class ControladorFilmes:
 
     @property
     def filmes(self):
+        """
+        Retorna a lista de objetos Filme gerenciados.
+
+        Returns:
+            list[Filme]: Uma lista de instâncias da classe Filme.
+        """
         return self.__filmes
 
     def _gerar_proximo_id(self):
-        """Gera um ID automático e padronizado para Filmes, somando 1 a cada Filme
+        """Gera um ID automático e padronizado para Filmes, padronizado somando 1 ao id a cada Filme
         cadastrado"""
         id_atual = self.__proximo_id
         self.__proximo_id += 1
         return id_atual
 
     def buscar_filme_por_id(self, id_filme_param):
+        """
+        Busca um filme na lista pelo seu ID.
+
+        Args:
+            id_filme_param (int): O ID do filme a ser procurado.
+
+        Returns:
+            Filme | None: O objeto Filme se encontrado, None caso contrário.
+        """
         for filme in self.__filmes:
             if filme.id_filme == id_filme_param:
                 return filme
@@ -36,6 +59,13 @@ class ControladorFilmes:
         return False
 
     def abre_tela(self):
+        """
+        Exibe o menu de opções para gerenciamento de filmes e processa
+        a escolha do usuário.
+
+        O loop continua até que o usuário escolha a opção de voltar (0).
+        Trata exceções como OpcaoInvalida e outras exceções genéricas.
+        """
         while True:
             try:
                 opcao = self.__tela_filmes.mostra_opcoes()
@@ -59,7 +89,9 @@ class ControladorFilmes:
                 input("🔁 Pressione Enter para continuar...")
 
     def cadastrar(self):
-        """Realiza o cadastro de um novo Filme"""
+        """
+        Realiza o cadastro de um novo Filme
+        """
         print("\n--- Cadastro de Novo Filme ---")
         
         lista_diretores = self.__controlador_sistema.controlador_membros.buscar_por_funcao("diretor")

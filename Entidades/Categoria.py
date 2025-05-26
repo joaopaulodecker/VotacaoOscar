@@ -1,6 +1,18 @@
 import Entidades.Voto
 
 class Categoria:
+    """Representa uma categoria de premiação no Oscar.
+
+    Cada categoria tem um nome, um tipo de item que pode ser indicado
+    (ator, diretor, filme) e armazena os votos recebidos.
+
+    Attributes:
+        id (int): Identificador único da categoria.
+        nome (str): Nome da categoria (e.g., "Melhor Filme").
+        tipo_indicacao (str): Tipo de item que pode ser indicado nesta categoria
+                              (definido em TIPOS_VALIDOS).
+        votos (list[Voto]): Lista de objetos Voto registrados para esta categoria.
+    """
     TIPOS_VALIDOS = ("ator", "diretor", "filme")
 
     def __init__(self, id_categoria: int, nome: str, tipo_indicacao: str):
@@ -40,6 +52,7 @@ class Categoria:
         return self.__tipo
 
     def adicionar_voto(self, voto):
+        """Adiciona um voto à lista de votos desta categoria."""
         if isinstance(voto, Entidades.Voto.Voto): 
             self.__votos.append(voto)
 
