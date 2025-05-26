@@ -64,9 +64,6 @@ class ControladorIndicacao:
 
         # Seleção do membro (jurado) que está fazendo a indicação.
         # Passa a lista filtrada para a tela
-        membro_selecionado_dict = self.__tela_indicacao.seleciona_membro(
-            membros_aptos_a_indicar)  # Nome da variável alterado aqui
-
         membro_selecionado_dict = self.__tela_indicacao.seleciona_membro(membros_aptos_a_indicar)  #
         if not membro_selecionado_dict:
             print("ℹ️ Seleção de membro cancelada.")
