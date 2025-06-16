@@ -1,57 +1,88 @@
-from Excecoes.OpcaoInvalida import OpcaoInvalida
+from Entidades.Categoria import Categoria
+from Utils.validadores import le_num_inteiro
 
 class TelaCategoria:
-    def __init__(self):
-        pass
 
-    def mostra_opcoes(self):
-        print("\n----- CATEGORIAS -----")
-        print("1 - Cadastrar Categoria")
-        print("2 - Alterar Categoria")
-        print("3 - Excluir Categoria")
-        print("4 - Listar Categorias")
-        print("0 - Voltar")
+    def mostra_mensagem(self, msg: str):
+        """Exibe uma mensagem genérica para o usuário."""
+        print(f"\n{msg}")
 
-        while True:
-            opcao_str = input("Escolha a opção: ").strip()
-            if opcao_str.isdigit():
-                valor = int(opcao_str)
-                if 0 <= valor <= 4:
-                    return valor
-            raise OpcaoInvalida("Opção de menu de categorias inválida. Escolha entre 0 e 4.")
+    def espera_input(self, msg: str = "🔁 Pressione Enter para continuar..."):
+        """Exibe uma mensagem e aguarda o input do usuário para pausar."""
+        input(msg)
+
+    def mostra_opcoes(self) -> int:
+        """Exibe o menu de opções e retorna a escolha validada do usuário."""
+        self.mostra_mensagem("----- CATEGORIAS -----")
+        self.mostra_mensagem("1 - Cadastrar Categoria")
+        self.mostra_mensagem("2 - Alterar Categoria")
+        self.mostra_mensagem("3 - Excluir Categoria")
+        self.mostra_mensagem("4 - Listar Categorias")
+        self.mostra_mensagem("0 - Voltar")
+
+        return le_num_inteiro("Escolha uma opção: ", min_val=0, max_val=4)
+
+    def mostra_lista_categorias(self, categorias_dados: list[dict]):
+        """
+        Recebe uma lista de dicionários com dados de categorias e os exibe.
+        """
+        self.mostra_mensagem("--- Lista de Categorias Cadastradas ---")
+        if not categorias_dados:
+            self.mostra_mensagem("📭 Nenhuma categoria cadastrada.")
+        else:
+            for categoria_info in categorias_dados:
+                self.mostra_mensagem(
+                    f"ID: {categoria_info.get('id')} | "
+                    f"Nome: {categoria_info.get('nome')} | "
+                    f"Tipo: {categoria_info.get('tipo_indicacao', '').capitalize()}"
+                )
+        self.mostra_mensagem("------------------------------------")
 
     def pega_dados_categoria(self, dados_atuais=None):
-        print("\n--- Dados da Categoria ---")
+        """Coleta do usuário os dados para cadastrar ou alterar uma categoria."""
         if dados_atuais:
-            print(f"(Deixe em branco para manter o valor atual: '{dados_atuais.get('nome', '')}')")
-            nome_input = input("Novo nome da categoria: ").strip()
-            nome = nome_input if nome_input else dados_atuais.get("nome")
+            self.mostra_mensagem(f"--- Alteração de Categoria (ID: {dados_atuais.get('id')}) ---")
+            self.mostra_mensagem("Deixe em branco para manter o valor atual.")
         else:
-            nome = input("Nome da categoria: ").strip()
+            self.mostra_mensagem("--- Cadastro de Nova Categoria ---")
 
-        if not nome:
-            print("❌ Nome da categoria não pode ser vazio.")
-            return None
+        nome_prompt = "Nome da categoria"
+        if dados_atuais and dados_atuais.get('nome'):
+            nome_prompt += f" (atual: {dados_atuais['nome']})"
         
-        return {"nome": nome}
+        nome_input = input(f"{nome_prompt}: ").strip()
+        nome_final = nome_input if nome_input else dados_atuais.get("nome")
+        
+        if not nome_final:
+            self.mostra_mensagem("❌ Nome da categoria não pode ser vazio.")
+            return None
 
-    def seleciona_categoria_por_id(self, mensagem="Digite o ID da categoria: "):
-        while True:
-            id_str = input(mensagem).strip()
-            if not id_str:
+        # O tipo de indicação só pode ser definido na criação da categoria.
+        if not dados_atuais:
+            self.mostra_mensagem("\nTipo de Indicação para a Categoria:")
+            tipos_validos = Categoria.TIPOS_VALIDOS
+            for i, tipo in enumerate(tipos_validos):
+                self.mostra_mensagem(f"  {i+1} - {tipo.capitalize()}")
+
+            escolha = le_num_inteiro(
+                f"Escolha o número do tipo (1-{len(tipos_validos)}): ",
+                min_val=1, max_val=len(tipos_validos)
+            )
+            if escolha is None:
+                self.mostra_mensagem("❌ Seleção de tipo cancelada.")
                 return None
-            if id_str.isdigit():
-                return id_str
-            print("❌ ID inválido. Por favor, digite um número.")
+            tipo_final = tipos_validos[escolha - 1]
+            return {"nome": nome_final, "tipo_indicacao": tipo_final}
+        
+        return {"nome": nome_final}
 
-    def confirma_exclusao(self, nome_categoria: str):
-        while True:
-            confirmacao = input(f"Tem certeza que deseja excluir a categoria '{nome_categoria}'? (S/N): ").strip().upper()
-            if confirmacao == 'S':
-                return True
-            elif confirmacao == 'N':
-                return False
-            print("❌ Opção inválida. Digite S para Sim ou N para Não.")
-            
-    def mostra_mensagem(self, msg: str):
-        print(f"\n{msg}")
+    def seleciona_categoria_por_id(self, mensagem="Digite o ID da categoria: ") -> int | None:
+        """Pede um ID ao usuário e o retorna como inteiro."""
+        return le_num_inteiro(mensagem, permitir_vazio=True)
+
+    def confirma_exclusao(self, nome_categoria: str) -> bool:
+        """Pede confirmação do usuário para uma exclusão."""
+        confirmacao = input(
+            f"Tem certeza que deseja excluir a categoria '{nome_categoria}'? (S/N): "
+        ).strip().upper()
+        return confirmacao == 'S'

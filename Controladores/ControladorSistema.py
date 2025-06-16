@@ -53,39 +53,36 @@ class ControladorSistema:
     def encerrar_indicacoes_abrir_votacao(self):
         if self.__fase_atual_premiacao == ControladorSistema.FASE_INDICACOES_ABERTAS:
             self.__fase_atual_premiacao = ControladorSistema.FASE_VOTACAO_ABERTA
-            print("\n✅ Período de indicações encerrado. Votação liberada!")
+            self.__tela_sistema.mostra_mensagem("\n✅ Período de indicações encerrado. Votação liberada!")
         elif self.__fase_atual_premiacao == ControladorSistema.FASE_VOTACAO_ABERTA:
-            print("\nℹ️ A votação já está aberta. As indicações já foram encerradas.")
+            self.__tela_sistema.mostra_mensagem("\nℹ️ A votação já está aberta. As indicações já foram encerradas.")
         else:
-            print("\nℹ️ A premiação já foi concluída.")
-        input("🔁 Pressione Enter para continuar...")
+            self.__tela_sistema.mostra_mensagem("\nℹ️ A premiação já foi concluída.")
+        self.__tela_sistema.espera_input()
+
+    def _listar_membros_por_funcao(self, funcao: str, titulo: str):
+        membros_encontrados = self.__controlador_membros.buscar_por_funcao(funcao)
+        lista_formatada = [
+            f"   ID: {membro.get('id', 'N/A')} | Nome: {membro.get('nome', 'N/A')}"
+            for membro in membros_encontrados
+        ]
+        self.__tela_sistema.mostra_lista(titulo, lista_formatada)
+        self.__tela_sistema.espera_input()
 
     def inicializa_sistema(self):
         while True:
             try:
-                print(f"\n--- Fase Atual: {self.fase_atual_premiacao.replace('_', ' ').title()} ---")
+                fase_formatada = self.fase_atual_premiacao.replace('_', ' ').title()
+                self.__tela_sistema.mostra_mensagem(f"\n--- Fase Atual: {fase_formatada} ---")
+                
                 opcao = self.__tela_sistema.mostra_opcoes()
 
                 if opcao == 1:
                     self.__controlador_membros.abrir_menu()
                 elif opcao == 2:
-                    print("\n🎭 Atores Cadastrados:")
-                    atores = self.__controlador_membros.buscar_por_funcao("ator")
-                    if atores:
-                        for ator in atores:
-                            print(f"   ID: {ator.get('id', 'N/A')} | Nome: {ator.get('nome', 'N/A')}")
-                    else:
-                        print("   Nenhum ator cadastrado.")
-                    input("🔁 Pressione Enter para voltar...")
+                    self._listar_membros_por_funcao("ator", "\n🎭 Atores Cadastrados:")
                 elif opcao == 3:
-                    print("\n🎬 Diretores Cadastrados:")
-                    diretores = self.__controlador_membros.buscar_por_funcao("diretor")
-                    if diretores:
-                        for diretor in diretores:
-                            print(f"   ID: {diretor.get('id', 'N/A')} | Nome: {diretor.get('nome', 'N/A')}")
-                    else:
-                        print("   Nenhum diretor cadastrado.")
-                    input("🔁 Pressione Enter para voltar...")
+                    self._listar_membros_por_funcao("diretor", "\n🎬 Diretores Cadastrados:")
                 elif opcao == 4:
                     self.__controlador_filmes.abre_tela()
                 elif opcao == 5:
@@ -99,14 +96,12 @@ class ControladorSistema:
                 elif opcao == 9:
                     self.encerrar_indicacoes_abrir_votacao()
                 elif opcao == 0:
-                    print("Saindo do sistema Oscar...")
+                    self.__tela_sistema.mostra_mensagem("Saindo do sistema Oscar...")
                     break
-                else:
-                    print("❌ Opção não reconhecida pelo sistema. Tente novamente.")
-
+            
             except OpcaoInvalida as e:
-                print(f"❌ {e}")
-                input("🔁 Pressione Enter para tentar novamente...")
+                self.__tela_sistema.mostra_mensagem(f"❌ {e}")
+                self.__tela_sistema.espera_input()
             except Exception as e:
-                print(f"❌ Ocorreu um erro geral no sistema: {e}")
-                input("🔁 Pressione Enter para continuar...")
+                self.__tela_sistema.mostra_mensagem(f"❌ Ocorreu um erro geral no sistema: {e}")
+                self.__tela_sistema.espera_input()

@@ -2,185 +2,128 @@ from Utils.validadores import le_num_inteiro, le_texto_alpha_espacos
 from Excecoes.OpcaoInvalida import OpcaoInvalida
 from datetime import date
 
-class TelaCadastro:
-    """ Interface de usuário genérica para operações de cadastro (CRUD)
-    de diferentes tipos de entidades (e.g., membro, categoria).
 
-    O tipo de entidade é definido no construtor e usado para
-    personalizar as mensagens exibidas ao usuário."""
+class TelaCadastro:
+
     def __init__(self, tipo):
         self.__tipo = tipo
 
-    def mostrar_menu(self):
-        print(f"\n===== MENU {self.__tipo.upper()} =====")
-        print("1 - Cadastrar")
-        print("2 - Alterar")
-        print("3 - Excluir")
-        print("4 - Listar")
-        print("0 - Voltar")
+    def mostra_mensagem(self, msg: str):
+        print(msg)
+
+    def espera_input(self, msg: str = "🔁 Pressione Enter para continuar..."):
+        """Exibe uma mensagem e aguarda o input do usuário para pausar."""
+        input(msg)
+
+    def mostra_cabecalho_operacao(self, operacao: str):
+        self.mostra_mensagem(f"\n--- {operacao} de {self.__tipo.capitalize()} ---")
+
+    def mostra_menu(self) -> int:
+        self.mostra_mensagem(f"\n===== MENU {self.__tipo.upper()} =====")
+        self.mostra_mensagem("1 - Cadastrar")
+        self.mostra_mensagem("2 - Alterar")
+        self.mostra_mensagem("3 - Excluir")
+        self.mostra_mensagem("4 - Listar")
+        self.mostra_mensagem("0 - Voltar")
 
         opcao = le_num_inteiro("Escolha uma opção: ", min_val=0, max_val=4)
         if opcao is None:
             raise OpcaoInvalida("Entrada de opção inválida.")
         return opcao
 
-    def pegar_dados(self, dados_atuais=None):
-        """Coleta os dados para cadastro ou alteração de uma entidade.
-
-        Se `dados_atuais` for fornecido, opera em modo de alteração,
-        permitindo manter valores atuais ao deixar campos em branco.
-        Caso contrário, opera em modo de cadastro.
-
-        A coleta de dados é específica para o `__tipo` de entidade
-        (membro, categoria, etc.)."""
-
-        if dados_atuais:
-            print(f"\n--- Alteração de {self.__tipo.capitalize()} (ID: {dados_atuais.get('id', 'N/A')}) ---")
-            print("Deixe o campo em branco para manter o valor atual (quando aplicável).")
+    def mostra_lista_entidades(self, lista_dados: list[dict]):
+        self.mostra_cabecalho_operacao(f"Lista de {self.__tipo.capitalize()}s")
+        if not lista_dados:
+            self.mostra_mensagem(f"📭 Nenhum(a) {self.__tipo} cadastrado(a).")
         else:
-            print(f"\n--- Cadastro de {self.__tipo.capitalize()} ---")
-            print("(Deixe um campo obrigatório em branco para cancelar)")
+            for dados_entidade in lista_dados:
+                self.mostra_mensagem(dados_entidade.get('info_str', 'Dados indisponíveis'))
+        self.mostra_mensagem("------------------------------------")
+
+    def pegar_dados(self, dados_atuais=None):
+        """Coleta do usuário os dados para cadastrar ou alterar uma entidade."""
+        if dados_atuais:
+            self.mostra_cabecalho_operacao(
+                f"Alteração de {self.__tipo.capitalize()} "
+                f"(ID: {dados_atuais.get('id', 'N/A')})"
+            )
+            self.mostra_mensagem(
+                "Deixe o campo em branco para manter o valor atual (quando aplicável)."
+            )
+        else:
+            self.mostra_cabecalho_operacao(
+                f"Cadastro de {self.__tipo.capitalize()}"
+            )
+            self.mostra_mensagem("(Deixe um campo obrigatório em branco para cancelar)")
 
         try:
             nome_prompt = "Nome"
-            if dados_atuais and dados_atuais.get('nome') is not None:
+            if dados_atuais and dados_atuais.get('nome'):
                 nome_prompt += f" (atual: {dados_atuais['nome']})"
-            nome_prompt += ": "
-            
-            nome_input = le_texto_alpha_espacos(nome_prompt, permitir_vazio_cancela=True)
-            nome_final = nome_input if nome_input is not None else dados_atuais.get('nome') if dados_atuais else None
+            nome_final = le_texto_alpha_espacos(f"{nome_prompt}: ", permitir_vazio_cancela=True)
+            if dados_atuais and nome_final is None:
+                nome_final = dados_atuais.get('nome')
 
-            if nome_final is not None:
-                nome_final = nome_final.title()
-
-            if nome_final is None or not nome_final.strip():
-                print("Nome é obrigatório e não pode ser vazio. Operação cancelada.")
+            if not nome_final or not nome_final.strip():
+                self.mostra_mensagem("Nome é obrigatório. Operação cancelada.")
                 return None
 
-            id_val = dados_atuais.get("id") if dados_atuais else None
-
-            if self.__tipo == "categoria":
-                retorno = {
-                    "nome": nome_final
-                }
-                if id_val is not None:
-                    retorno["id"] = id_val
-                return retorno
-
-            nacionalidade_prompt = "Nacionalidade"
-            if dados_atuais and dados_atuais.get('nacionalidade') is not None:
-                nacionalidade_prompt += f" (atual: {dados_atuais['nacionalidade']})"
-            nacionalidade_prompt += ": "
-
-            nacionalidade_input = le_texto_alpha_espacos(nacionalidade_prompt, permitir_vazio_cancela=True)
-            nacionalidade_final = nacionalidade_input if nacionalidade_input is not None else dados_atuais.get(
-                'nacionalidade') if dados_atuais else None
-
-            if nacionalidade_final is not None:
-                nacionalidade_final = nacionalidade_final.title()
-
-            if nacionalidade_final is None or not nacionalidade_final.strip():
-                print("Nacionalidade é obrigatória e não pode ser vazia. Operação cancelada.")
-                return None
+            dados_coletados = {"nome": nome_final.title()}
 
             if self.__tipo == "membro":
-                ano_nascimento_final = None
-                ano_nascimento_prompt = "Ano de Nascimento"
-                min_ano_nasc = 1900
-                max_ano_nasc = date.today().year
+                nac_prompt = "Nacionalidade"
+                if dados_atuais and dados_atuais.get('nacionalidade'):
+                    nac_prompt += f" (atual: {dados_atuais['nacionalidade']})"
+                nac_final = le_texto_alpha_espacos(f"{nac_prompt}: ", permitir_vazio_cancela=True)
+                if dados_atuais and nac_final is None:
+                    nac_final = dados_atuais.get('nacionalidade')
 
-                if dados_atuais and dados_atuais.get('ano_nascimento') is not None:
-                    ano_nascimento_prompt += f" (atual: {dados_atuais['ano_nascimento']})"
-                ano_nascimento_prompt += ": "
-
-                if dados_atuais:
-                    ano_str_input = input(ano_nascimento_prompt).strip()
-                    if not ano_str_input:
-                        ano_nascimento_final = dados_atuais.get('ano_nascimento')
-                    else:
-                        try:
-                            ano_val_input = int(ano_str_input)
-                            if min_ano_nasc <= ano_val_input <= max_ano_nasc:
-                                ano_nascimento_final = ano_val_input
-                            else:
-                                print(f"❌ Ano de nascimento fora do intervalo válido ({min_ano_nasc}-{max_ano_nasc}). Valor anterior mantido se existir.")
-                                ano_nascimento_final = dados_atuais.get('ano_nascimento')
-                        except ValueError:
-                            print("❌ Ano de nascimento inválido. Deve ser um número. Valor anterior mantido se existir.")
-                            ano_nascimento_final = dados_atuais.get('ano_nascimento')
-                else:
-                    ano_nascimento_final = le_num_inteiro(ano_nascimento_prompt, min_val=min_ano_nasc, max_val=max_ano_nasc)
-                
-                if ano_nascimento_final is None and not dados_atuais:
-                    print("Ano de Nascimento é obrigatório para novo membro e deve ser válido. Operação cancelada.")
+                if not nac_final or not nac_final.strip():
+                    self.mostra_mensagem("Nacionalidade é obrigatória. Operação cancelada.")
                     return None
-                
+                dados_coletados["nacionalidade"] = nac_final.title()
+
+                ano_prompt = "Ano de Nascimento"
+                if dados_atuais and dados_atuais.get('ano_nascimento'):
+                    ano_prompt += f" (atual: {dados_atuais['ano_nascimento']})"
+                ano_nasc_final = le_num_inteiro(
+                    f"{ano_prompt}: ", min_val=1900, max_val=date.today().year,
+                    permitir_vazio=bool(dados_atuais)
+                )
+                if dados_atuais and ano_nasc_final is None:
+                    ano_nasc_final = dados_atuais.get('ano_nascimento')
+
+                if ano_nasc_final is None and not dados_atuais:
+                    self.mostra_mensagem("Ano de Nascimento é obrigatório. Operação cancelada.")
+                    return None
+                dados_coletados["ano_nascimento"] = ano_nasc_final
+
                 funcoes_permitidas = ["ator", "diretor", "jurado"]
-                funcao_final = None
-
-                print("\nFunção do membro:")
+                self.mostra_mensagem("\nFunção do membro:")
                 for i, opt in enumerate(funcoes_permitidas):
-                    print(f"  {i + 1} - {opt.capitalize()}")
-
-                prompt_msg_funcao = f"Escolha o número da função (1-{len(funcoes_permitidas)})"
-                current_funcao_display = ""
+                    self.mostra_mensagem(f"  {i + 1} - {opt.capitalize()}")
+                
+                funcao_prompt = f"Escolha o número da função (1-{len(funcoes_permitidas)})"
                 if dados_atuais and dados_atuais.get('funcao'):
-                    try:
-                        current_funcao_lower = str(dados_atuais.get('funcao', '')).lower()
-                        if current_funcao_lower in funcoes_permitidas:
-                            current_funcao_index = funcoes_permitidas.index(current_funcao_lower)
-                            current_funcao_display = f" (atual: {current_funcao_index + 1} - {str(dados_atuais.get('funcao')).capitalize()})"
-                    except Exception:
-                        pass
-                prompt_msg_funcao += f"{current_funcao_display}: "
+                    funcao_prompt += f" (atual: {dados_atuais.get('funcao').capitalize()})"
 
-                while True:
-                    escolha_str = input(prompt_msg_funcao).strip()
-                    if dados_atuais and not escolha_str:
-                        funcao_final = dados_atuais.get('funcao')
-                        break
-                    if not escolha_str and not dados_atuais:
-                        funcao_final = None
-                        break
-
-                    if escolha_str.isdigit():
-                        escolha_num = int(escolha_str)
-                        if 1 <= escolha_num <= len(funcoes_permitidas):
-                            funcao_final = funcoes_permitidas[escolha_num - 1]
-                            break
-                        else:
-                            print(f"❌ Número fora do intervalo (1-{len(funcoes_permitidas)}). Tente novamente.")
-                    else:
-                        print("❌ Entrada inválida. Por favor, digite um número correspondente à opção.")
-
-                if funcao_final is None or not funcao_final.strip():
-                    print("Função é obrigatória e não pode ser vazia. Operação cancelada.")
+                escolha = le_num_inteiro(funcao_prompt + ": ", min_val=0, max_val=len(funcoes_permitidas), permitir_vazio=bool(dados_atuais))
+                
+                funcao_final = dados_atuais.get('funcao') if dados_atuais else None
+                if escolha is not None and escolha > 0:
+                    funcao_final = funcoes_permitidas[escolha - 1]
+                
+                if not funcao_final:
+                    self.mostra_mensagem("Função é obrigatória. Operação cancelada.")
                     return None
+                dados_coletados["funcao"] = funcao_final
+            
+            return dados_coletados
 
-                retorno = {
-                    "nome": nome_final,
-                    "nacionalidade": nacionalidade_final,
-                    "ano_nascimento": ano_nascimento_final,
-                    "funcao": funcao_final
-                }
-                if id_val is not None:
-                    retorno["id"] = id_val
-                return retorno
-
-            retorno = {
-                "nome": nome_final,
-                "nacionalidade": nacionalidade_final
-            }
-            if id_val is not None:
-                retorno["id"] = id_val
-            return retorno
-
-        except KeyboardInterrupt:
-            print("\nOperação cancelada pelo usuário.")
-            return None
-        except Exception as e:
-            print(f"\nOcorreu um erro inesperado ao coletar dados: {e}")
+        except (KeyboardInterrupt, EOFError):
+            self.mostra_mensagem("\nOperação cancelada pelo usuário.")
             return None
 
-    def pegar_id(self, mensagem: str):
+    def pegar_id(self, mensagem: str) -> int | None:
+        """Pede um ID ao usuário e o retorna como inteiro."""
         return le_num_inteiro(mensagem)
