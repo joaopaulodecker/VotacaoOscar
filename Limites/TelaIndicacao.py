@@ -71,14 +71,13 @@ class TelaIndicacao:
             return "diretor"
         return None
 
-    def mostra_lista_indicacoes(self, categoria_nome: str, indicacoes_dados: list[dict]):
+    def mostra_lista_indicacoes(self, categoria_nome: str, indicacoes_dados: list[str]):
         """Exibe as indicações para uma categoria específica."""
+
         self.mostra_mensagem(f"\nIndicados para: {categoria_nome}")
+
         if not indicacoes_dados:
             self.mostra_mensagem("   Nenhuma indicação para esta categoria ainda.")
         else:
-            for indicacao_info in indicacoes_dados:
-                self.mostra_mensagem(
-                    f"   - {indicacao_info.get('detalhes_item')} "
-                    f"(Indicado pelo membro ID: {indicacao_info.get('membro_id')})"
-                )
+            for detalhes_indicacao in indicacoes_dados:
+                self.mostra_mensagem(f"   - {detalhes_indicacao}")

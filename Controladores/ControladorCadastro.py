@@ -106,8 +106,12 @@ class ControladorCadastro:
         info_str = f"ID: {entidade.get('id')} | Nome: {entidade.get('nome')}"
 
         if self.__tipo_entidade == "membro":
-            if entidade.get('funcao'):
-                info_str += f" | Função: {entidade['funcao'].capitalize()}"
+            funcao = entidade.get('funcao')
+            if funcao == 'ator':
+                display_funcao = entidade.get('genero_artistico', 'Ator').capitalize()
+                info_str += f" | Função: {display_funcao}"
+            elif funcao:
+                info_str += f" | Função: {funcao.capitalize()}"
             
             ano_nasc = entidade.get('ano_nascimento')
             if ano_nasc:

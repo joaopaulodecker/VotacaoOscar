@@ -117,7 +117,35 @@ class TelaCadastro:
                     self.mostra_mensagem("Função é obrigatória. Operação cancelada.")
                     return None
                 dados_coletados["funcao"] = funcao_final
-            
+
+                if funcao_final == 'ator':
+                    generos_permitidos = ["Ator", "Atriz"]
+                    self.mostra_mensagem("\nGênero Artístico:")
+                    self.mostra_mensagem("  1 - Ator")
+                    self.mostra_mensagem("  2 - Atriz")
+
+                    genero_prompt = f"Escolha o gênero (1-2)"
+                    # Mostra o valor atual se estiver alterando
+                    genero_atual = dados_atuais.get('genero_artistico') if dados_atuais else None
+                    if genero_atual:
+                        genero_prompt += f" (atual: {genero_atual})"
+
+                    # Permite deixar em branco na alteração para manter o valor
+                    escolha_genero = le_num_inteiro(
+                        genero_prompt + ": ", min_val=1, max_val=2,
+                        permitir_vazio=bool(dados_atuais)
+                    )
+
+                    genero_final = genero_atual
+                    if escolha_genero is not None:
+                        genero_final = generos_permitidos[escolha_genero - 1]
+
+                    if not genero_final:
+                        self.mostra_mensagem("Gênero é obrigatório para atores. Operação cancelada.")
+                        return None
+                    # Adiciona a nova informação ao dicionário
+                    dados_coletados["genero_artistico"] = genero_final
+
             return dados_coletados
 
         except (KeyboardInterrupt, EOFError):

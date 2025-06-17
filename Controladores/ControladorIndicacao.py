@@ -199,33 +199,37 @@ class ControladorIndicacao:
     def listar_indicacoes_por_categoria(self):
         """Permite ao usuário selecionar uma categoria e lista as indicações."""
         self.__tela_indicacao.mostra_mensagem("\n--- Indicações por Categoria ---")
-        
+
         categorias = self.__controlador_categorias.entidades
         if not categorias:
             self.__tela_indicacao.mostra_mensagem("❌ Nenhuma categoria cadastrada.")
             self.__tela_indicacao.espera_input()
             return
 
+        # 1. Controlador pede para a tela selecionar a categoria e recebe o ID
         categorias_dados = self._preparar_dados_para_selecao(categorias)
         cat_escolhida_dados = self.__tela_indicacao.seleciona_categoria(categorias_dados)
         if not cat_escolhida_dados:
             self.__tela_indicacao.espera_input()
             return
-        
+
+        # 2. Controlador busca a categoria completa usando o ID
+        id_cat_escolhida = cat_escolhida_dados.get('id')
+
+        # 3. Controlador prepara os dados para a TELA
         indicacoes_filtradas = [
-            ind for ind in self.__indicacoes 
-            if ind.categoria.id == cat_escolhida_dados.get('id')
+            ind for ind in self.__indicacoes
+            if ind.categoria.id == id_cat_escolhida
         ]
-        
+
         dados_para_tela = [
-            {
-                "detalhes_item": ind.obter_detalhes_item_indicado(),
-                "membro_id": ind.membro_id
-            } for ind in indicacoes_filtradas
+            ind.obter_detalhes_item_indicado() for ind in indicacoes_filtradas
         ]
-        
+
+        nome_categoria = cat_escolhida_dados.get('info', 'Categoria')
+
         self.__tela_indicacao.mostra_lista_indicacoes(
-            cat_escolhida_dados.get('info'),
+            nome_categoria,
             dados_para_tela
         )
         self.__tela_indicacao.espera_input()
