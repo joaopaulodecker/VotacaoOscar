@@ -14,10 +14,12 @@ class TelaIndicacao:
         """Exibe o menu de opções e retorna a escolha do usuário."""
         self.mostra_mensagem("\n----- INDICAÇÕES -----")
         self.mostra_mensagem("1 - Registrar Nova Indicação")
-        self.mostra_mensagem("2 - Listar Indicações por Categoria")
+        self.mostra_mensagem("2 - Alterar Indicação")
+        self.mostra_mensagem("3 - Excluir Indicação")
+        self.mostra_mensagem("4 - Listar Indicações por Categoria")
         self.mostra_mensagem("0 - Voltar ao Menu Principal")
 
-        return le_num_inteiro("Escolha a opção: ", min_val=0, max_val=2)
+        return le_num_inteiro("Escolha a opção: ", min_val=0, max_val=4)
 
     def _selecionar_item_da_lista(self, lista_dados: list[dict], titulo_selecao: str) -> dict | None:
 
@@ -37,8 +39,8 @@ class TelaIndicacao:
             if escolha_num is None or escolha_num == 0:
                 self.mostra_mensagem("Seleção cancelada.")
                 return None
-            
-            return lista_dados[escolha_num - 1]
+
+            return lista_dados[escolha_num - 1].get('id')
         except (ValueError, IndexError):
             self.mostra_mensagem("Entrada inválida. Por favor, digite um número da lista.")
             return None
@@ -55,22 +57,6 @@ class TelaIndicacao:
     def seleciona_membro_por_funcao(self, membros_dados: list, funcao_nome: str) -> dict | None:
         return self._selecionar_item_da_lista(membros_dados, funcao_nome)
 
-    def pega_tipo_item_indicado(self, nome_categoria: str) -> str | None:
-        self.mostra_mensagem(f"\nPara a categoria '{nome_categoria}', você quer indicar:")
-        self.mostra_mensagem("1 - Filme 🎬")
-        self.mostra_mensagem("2 - Ator/Atriz 🎭")
-        self.mostra_mensagem("3 - Diretor(a) 🎬")
-        self.mostra_mensagem("0 - Cancelar Indicação")
-        
-        opcao = le_num_inteiro("👉 Escolha uma opção (0-3): ", min_val=0, max_val=3)
-        if opcao == 1:
-            return "filme"
-        elif opcao == 2:
-            return "ator"
-        elif opcao == 3:
-            return "diretor"
-        return None
-
     def mostra_lista_indicacoes(self, categoria_nome: str, indicacoes_dados: list[str]):
         """Exibe as indicações para uma categoria específica."""
 
@@ -81,3 +67,30 @@ class TelaIndicacao:
         else:
             for detalhes_indicacao in indicacoes_dados:
                 self.mostra_mensagem(f"   - {detalhes_indicacao}")
+
+    def mostra_lista_geral_indicacoes(self, indicacoes: list[str]):
+        """Exibe uma lista formatada de todas as indicações registradas."""
+        print("\n--- Lista Geral de Indicações Registradas ---")
+        if not indicacoes:
+            print("📭 Nenhuma indicação registrada até o momento.")
+            return
+
+        for info_str in indicacoes:
+            print(info_str)
+
+    def pega_id_indicacao(self, mensagem_prompt: str) -> int | None:
+        """Pede ao usuário para digitar o ID de uma indicação e o retorna."""
+        print("")
+        # Validador para garantir um número ou None se o usuário cancelar
+        return le_num_inteiro(mensagem_prompt, min_val=1, permitir_vazio=True)
+
+    def confirma_exclusao(self, info_indicacao: str) -> bool:
+        """Mostra os detalhes de uma indicação e pede confirmação para excluir."""
+        from Utils.validadores import le_string_nao_vazia
+        print(f"\nVocê está prestes a excluir a seguinte indicação:")
+        print(f"  -> {info_indicacao}")
+
+        resposta = le_string_nao_vazia("Tem certeza que deseja excluir? (S/N): ")
+
+        # Retorna True se a resposta for 'S' ou 's', False caso contrário
+        return resposta is not None and resposta.upper().startswith('S')

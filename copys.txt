@@ -1,8 +1,5 @@
 from collections import Counter
-from Entidades.Ator import Ator
-from Entidades.Diretor import Diretor
-from Entidades.Categoria import Categoria
-from Entidades.Filme import Filme
+
 from Entidades.Categoria import Categoria
 from Entidades.Filme import Filme
 from Entidades.IndAtor import IndAtor
@@ -47,11 +44,10 @@ class ControladorIndicacao:
             elif isinstance(item, (Ator, Diretor)):
                 info = item.get_info_str()
                 dados_para_tela.append({"id": item.id, "info": info})
+            return dados_para_tela
 
-        return dados_para_tela
 
-
-    def abrir_menu_indicacoes(self):
+def abrir_menu_indicacoes(self):
         while True:
             try:
                 opcao = self.__tela_indicacao.mostra_opcoes_indicacao()
@@ -72,6 +68,9 @@ class ControladorIndicacao:
                 self.__tela_indicacao.mostra_mensagem(f"❌ Erro inesperado: {e}")
                 self.__tela_indicacao.espera_input()
 
+        # ===============================================================
+        # MÉTODO iniciar_indicacao - MELHORA DO T1 COMPLETAMENTE REFEITO E SIMPLIFICADO
+        # ===============================================================
 
     def iniciar_indicacao(self):
         """
@@ -91,43 +90,92 @@ class ControladorIndicacao:
         self.__tela_indicacao.mostra_mensagem("\n--- Nova Indicação ---")
 
         # 2. Selecionar Categoria
-        categorias = self.__controlador_categorias.entidades
-        if not categorias:
-            self.__tela_indicacao.mostra_mensagem("❌ Nenhuma categoria cadastrada para indicação.")
+
+        membros = self.__controlador_membros.entidades
+
+        # Se não houver membros, interrompemos o processo
+        if not membros:
+            self.__tela_indicacao.mostra_mensagem(
+                "❌ Nenhum membro cadastrado para fazer indicações."
+            )
             self.__tela_indicacao.espera_input()
             return
+
+        membros_dados = self._preparar_dados_para_selecao(membros)
+        membro_escolhido = self.__tela_indicacao.seleciona_membro(membros_dados)
+        if not membro_escolhido:
+            self.__tela_indicacao.espera_input()
+            return
+        membro_id = membro_escolhido.get("id")
+
+        categorias = self.__controlador_categorias.entidades
+        if not categorias:
+            self.__tela_indicacao.mostra_mensagem(
+                "❌ Nenhuma categoria cadastrada para indicação."
+            )
+            self.__tela_indicacao.espera_input()
+            return
+
         categorias_dados = self._preparar_dados_para_selecao(categorias)
-        categoria_escolhida_dados = self.__tela_indicacao.seleciona_categoria(categorias_dados)
+        categoria_escolhida_dados = self.__tela_indicacao.seleciona_categoria(
+            categorias_dados
+        )
         if not categoria_escolhida_dados:
             self.__tela_indicacao.espera_input()
             return
-        categoria_obj = self.__controlador_categorias.buscar_categoria_por_id(categoria_escolhida_dados.get('id'))
+        categoria_obj = self.__controlador_categorias.buscar_categoria_por_id(
+            categoria_escolhida_dados.get('id')
+        )
 
-
-        # 3. Selecionar o item para indicar (usando a lógica de filtro)
-        tipo_item = categoria_obj.tipo_indicacao
         item_indicado_obj = self._selecionar_item_para_indicacao(tipo_item, categoria_obj.nome)
+        self.__tela_indicacao.mostra_mensagem(
+            f"ℹ️ A categoria '{categoria_obj.nome}' aceita indicações do tipo: "
+            f"{item_indicado_obj.capitalize()}"
+        )
+
+        # APRIMORAMENTO DO T1: passando tipo do item e tambem NOME da categoria
+        item_indicado_obj = self._selecionar_item_para_indicacao(tipo_item, categoria_obj.nome)
+
+        # Se o usuário cancelar a seleção do item, interrompemos
         if not item_indicado_obj:
+            self.__tela_indicacao.mostra_mensagem(
+                "ℹ️ Seleção do item a ser indicado cancelada ou inválida."
+            )
             self.__tela_indicacao.espera_input()
             return
 
+        id_item = (item_indicado_obj.id_filme if isinstance(item_indicado_obj, Filme)
+                   else item_indicado_obj.get("id"))
+        nome_item = (item_indicado_obj.titulo if isinstance(item_indicado_obj, Filme)
+                     else item_indicado_obj.get("nome"))
 
-        # 4. Criar e salvar a indicação
+        if self._indicacao_ja_existe(membro_id, categoria_obj.id, id_item, item_indicado_obj):
+            self.__tela_indicacao.mostra_mensagem(
+                f"⚠️ O membro ID {membro_id} já indicou '{nome_item}' para "
+                f"a categoria '{categoria_obj.nome}'."
+            )
+            self.__tela_indicacao.espera_input()
+            return
+
         id_nova_indicacao = self._gerar_proximo_id_indicacao()
-        nova_indicacao = self._criar_objeto_indicacao(id_nova_indicacao, categoria_obj, item_indicado_obj)
+        nova_indicacao = self._criar_objeto_indicacao(
+            id_nova_indicacao, membro_id, categoria_obj,
+            item_indicado_obj, item_indicado_obj
+        )
 
         if nova_indicacao:
             self.__indicacoes.append(nova_indicacao)
-            nome_item = item_indicado_obj.titulo if isinstance(item_indicado_obj, Filme) else item_indicado_obj.nome
             self.__tela_indicacao.mostra_mensagem(
-                f"\n✅ Indicação de '{nome_item}' para '{categoria_obj.nome}' registrada com sucesso!"
+                f"✅ Indicação de '{nome_item}' para '{categoria_obj.nome}' "
+                "registrada com sucesso!"
             )
         else:
-            self.__tela_indicacao.mostra_mensagem("❌ Falha ao criar o objeto de indicação.")
+            self.__tela_indicacao.mostra_mensagem(
+                "❌ Falha ao criar o objeto de indicação. Verifique os tipos."
+            )
         self.__tela_indicacao.espera_input()
 
-
-    def _selecionar_item_para_indicacao(self, tipo_item: str, nome_categoria: str = ""):
+    def _selecionar_item_para_indicacao(self, tipo_item: str):
         """Busca a lista apropriada e chama a tela para seleção do item.
             Esta é a parte que filtra por Ator/Atriz.
         """
@@ -141,99 +189,57 @@ class ControladorIndicacao:
             return self.__controlador_filmes.buscar_filme_por_id(id_escolhido) if id_escolhido else None
 
         elif tipo_item == "ator":
-            genero_alvo = "Atriz" if "atriz" in nome_categoria.lower() else "Ator"
+            genero_alvo = None
+            # Verifica o nome da categoria para decidir se busca "Ator" ou "Atriz"
+            if "atriz" in nome_categoria.lower():
+                genero_alvo = "Atriz"
+            elif "ator" in nome_categoria.lower():
+                genero_alvo = "Ator"
+
             membros_aptos = self.__controlador_membros.buscar_por_funcao_e_genero("ator", genero_alvo)
             if not membros_aptos:
-                self.__tela_indicacao.mostra_mensagem(f"❌ Nenhum(a) {genero_alvo} cadastrado(a).")
+                msg = f"❌ Nenhum(a) {genero_alvo if genero_alvo else 'Ator/Atriz'} cadastrado(a)."
+                self.__tela_indicacao.mostra_mensagem(msg)
                 return None
+
             dados_tela = self._preparar_dados_para_selecao(membros_aptos)
-            id_membro = self.__tela_indicacao.seleciona_membro_por_funcao(dados_tela, genero_alvo)
+            # Pede para a tela selecionar e retorna o objeto completo
+            id_membro = self.__tela_indicacao.seleciona_membro_por_funcao(dados_tela,
+                                                                          genero_alvo if genero_alvo else "Ator/Atriz")
             return self.__controlador_membros.buscar_por_id(id_membro)
 
+
         elif tipo_item == "diretor":
-            membros_aptos = self.__controlador_membros.buscar_por_funcao("diretor")
+            membros_aptos = self.__controlador_membros.buscar_por_funcao(tipo_item)
             if not membros_aptos:
                 self.__tela_indicacao.mostra_mensagem(
                     f"❌ Nenhum(a) {tipo_item.capitalize()} cadastrado."
                 )
                 return None
             dados_tela = self._preparar_dados_para_selecao(membros_aptos)
-            id_membro = self.__tela_indicacao.seleciona_membro_por_funcao(dados_tela, "Diretor")
-            return self.__controlador_membros.buscar_por_id(id_membro)
+            return self.__tela_indicacao.seleciona_membro_por_funcao(dados_tela, "Diretor")
 
         return None
 
-
-    def _criar_objeto_indicacao(self, id_ind, membro_id, cat_obj, item_obj):
-        """Cria a instância correta da classe de indicação."""
-        if isinstance(item_obj, Filme):
-            return IndFilme(id_ind, item_obj, cat_obj)
-        elif isinstance(item_obj, Ator):
-            return IndAtor(id_ind, item_obj, cat_obj)
-        elif isinstance(item_obj, Diretor):
-            return IndDiretor(id_ind, item_obj, cat_obj)
-        return None
-
-        # ===============================================================
-        # NOVOS MÉTODOS: Excluir, Alterar e seus auxiliares
-        # ===============================================================
-    def excluir_indicacao(self, alterando: bool = False):
-        if self.__controlador_sistema.fase_atual_premiacao != self.__controlador_sistema.FASE_INDICACOES_ABERTAS:
-            self.__tela_indicacao.mostra_mensagem("\n❌ Não é possível excluir indicações após o início da votação.")
-            self.__tela_indicacao.espera_input()
-            return
-
-        self.listar_todas_indicacoes()
-        if not self.__indicacoes:
-            return
-
-        prompt = "Digite o ID da indicação a excluir: " if not alterando else "Digite o ID da indicação a substituir: "
-        id_alvo = self.__tela_indicacao.pega_id_indicacao(prompt)
-
-        if id_alvo is None:
-            self.__tela_indicacao.mostra_mensagem("ℹ️ Operação cancelada.")
-            self.__tela_indicacao.espera_input()
-            return
-
-        indicacao_alvo = self.buscar_indicacao_por_id(id_alvo)
-
-        if indicacao_alvo:
-            info = indicacao_alvo.obter_detalhes_item_indicado()
-            if self.__tela_indicacao.confirma_exclusao(info):
-                self.__indicacoes.remove(indicacao_alvo)
-                self.__tela_indicacao.mostra_mensagem("🗑️ Indicação removida com sucesso!")
-            else:
-                self.__tela_indicacao.mostra_mensagem("ℹ️ Operação cancelada.")
-        else:
-            self.__tela_indicacao.mostra_mensagem(f"❌ Indicação com ID {id_alvo} não encontrada.")
-        self.__tela_indicacao.espera_input()
-
-    def alterar_indicacao(self):
-        self.__tela_indicacao.mostra_mensagem("\n--- Alterar Indicação ---")
-        self.excluir_indicacao(alterando=True)
-        self.__tela_indicacao.mostra_mensagem("\nAgora, cadastre a nova indicação:")
-        self.iniciar_indicacao()
-
-    def buscar_indicacao_por_id(self, id_busca: int):
-        for indicacao in self.__indicacoes:
-            if indicacao.id_indicacao == id_busca:
-                return indicacao
-        return None
-
-    def listar_todas_indicacoes(self):
-        if not self.__indicacoes:
-            self.__tela_indicacao.mostra_mensagem("\n📭 Nenhuma indicação registrada.")
-            return
-
-        dados_para_tela = []
+    def _indicacao_ja_existe(self, membro_id, categoria_id, item_id, tipo_item):
+        """Verifica se uma indicação idêntica já foi feita pelo mesmo membro."""
         for ind in self.__indicacoes:
-            detalhes = ind.obter_detalhes_item_indicado()
-            info = (f"ID: {ind.id_indicacao} | Categoria: {ind.categoria.nome} | "
-                    f"Indicado: {detalhes}")
-            dados_para_tela.append(info)
+            if (ind.membro_id == membro_id and
+                    ind.categoria.id == categoria_id and
+                    ind.item_indicado_id == item_id and
+                    ind.tipo_item_indicado == tipo_item):
+                return True
+        return False
 
-        self.__tela_indicacao.mostra_lista_geral_indicacoes(dados_para_tela)
-
+    def _criar_objeto_indicacao(self, id_ind, membro_id, cat_obj, tipo, item_obj):
+        """Cria a instância correta da classe de indicação."""
+        if tipo == "filme":
+            return IndFilme(id_ind, membro_id, cat_obj, item_obj)
+        elif tipo == "ator":
+            return IndAtor(id_ind, membro_id, cat_obj, item_obj)
+        elif tipo == "diretor":
+            return IndDiretor(id_ind, membro_id, cat_obj, item_obj)
+        return None
 
     def listar_indicacoes_por_categoria(self):
         """Permite ao usuário selecionar uma categoria e lista as indicações."""
@@ -276,22 +282,22 @@ class ControladorIndicacao:
     def get_finalistas_por_categoria(self, categoria_id: int, limite: int = 5):
         """Calcula e retorna os finalistas para uma categoria."""
         indicacoes_da_categoria = [
-            ind for ind in self.__indicacoes 
+            ind for ind in self.__indicacoes
             if ind.categoria.id == categoria_id
         ]
         if not indicacoes_da_categoria:
             return []
 
         contagem = Counter(
-            (ind.item_indicado_id, ind.tipo_item_indicado) 
+            (ind.item_indicado_id, ind.tipo_item_indicado)
             for ind in indicacoes_da_categoria
         )
         if not contagem:
             return []
-            
+
         mapa_info = {
-            (ind.item_indicado_id, ind.tipo_item_indicado): 
-            ind.obter_detalhes_item_indicado() 
+            (ind.item_indicado_id, ind.tipo_item_indicado):
+            ind.obter_detalhes_item_indicado()
             for ind in indicacoes_da_categoria
         }
 
@@ -303,7 +309,7 @@ class ControladorIndicacao:
             chaves_finalistas = [
                 item[0] for item in ordenados if item[1] >= contagem_corte
             ]
-            
+
         return [
             {
                 "id_original_indicado": chave[0],

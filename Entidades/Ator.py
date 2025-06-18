@@ -1,4 +1,3 @@
-from pandas.core.window.online import generate_online_numba_ewma_func
 
 from Entidades.PessoaAbstract import PessoaAbstract
 from Entidades.Nacionalidade import Nacionalidade
@@ -10,15 +9,26 @@ class Ator(PessoaAbstract):
         self,
         nome: str,
         data_nascimento: int,
-        nacionalidade: Nacionalidade, genero: str
+        nacionalidade: Nacionalidade, genero_artistico: str
     ):
         super().__init__(nome, data_nascimento, nacionalidade)
-        self.__genero = genero
+        if genero_artistico.capitalize() not in ["Ator", "Atriz"]:
+            raise ValueError("Gênero artístico deve ser 'Ator' ou 'Atriz'.")
+        self.__genero_artistico = genero_artistico.capitalize()
+
 
     @property
-    def genero(self):
-        return self.__genero
+    def genero_artistico(self) -> str:
+        return self.__genero_artistico
 
-    @genero.setter
-    def genero(self, genero: str):
-        self.__genero = genero
+    @genero_artistico.setter
+    def genero_artistico(self, genero: str):
+        if genero.capitalize() not in ["Ator", "Atriz"]:
+            raise ValueError("Gênero artístico deve ser 'Ator' ou 'Atriz'.")
+        self.__genero_artistico = genero.capitalize()
+
+
+    def get_info_str(self) -> str:
+        """ Implementação do método abstrato da classe PessoaAbstract. """
+        return f"Nome: {self.nome}, Gênero: {self.genero_artistico}"
+
