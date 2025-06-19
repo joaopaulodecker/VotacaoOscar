@@ -1,6 +1,7 @@
 from Entidades.Categoria import Categoria
 from Limites.TelaCategoria import TelaCategoria
 from Excecoes.OpcaoInvalida import OpcaoInvalida
+from Excecoes.EntidadeDuplicadaException import EntidadeDuplicadaException
 
 class ControladorCategorias:
     def __init__(self):
@@ -45,46 +46,88 @@ class ControladorCategorias:
                     self.listar(mostrar_msg_voltar=True)
                 elif opcao == 0:
                     break
+            except EntidadeDuplicadaException as e:
+                self.__tela_categoria.mostra_mensagem(str(e))
+                self.__tela_categoria.espera_input()
             except OpcaoInvalida as e:
                 self.__tela_categoria.mostra_mensagem(f"❌ {e}")
                 self.__tela_categoria.espera_input()
 
     def cadastrar(self):
-        dados_tela = self.__tela_categoria.pega_dados_categoria()
 
-        if not dados_tela:
+        # 1. Pede os dados para a Tela. A Tela é responsável pelos inputs.
+        dados_categoria = self.__tela_categoria.pega_dados_categoria()
+        if dados_categoria is None:
             self.__tela_categoria.mostra_mensagem("ℹ️ Cadastro cancelado.")
             self.__tela_categoria.espera_input()
             return
 
-        nome_categoria = dados_tela["nome"].title()
-        if self._existe_nome_categoria(nome_categoria):
-            self.__tela_categoria.mostra_mensagem(f"❌ Já existe uma categoria com o nome '{nome_categoria}'.")
-            self.__tela_categoria.espera_input()
-            return
-            
+        # 2. O Controlador valida os dados e LANÇA uma exceção se a regra for violada.
+        if self._existe_nome_categoria(dados_categoria["nome"]):
+            raise EntidadeDuplicadaException(f"❌ Categoria '{dados_categoria['nome']}' já existe.")
+
+        # 3. O Controlador cria a entidade e manda a Tela mostrar o sucesso.
         novo_id = self._gerar_proximo_id()
-        nova_categoria = Categoria(id_categoria=novo_id, 
-                                    nome=nome_categoria, 
-                                    tipo_indicacao=dados_tela["tipo_indicacao"])
+        nova_categoria = Categoria(novo_id, dados_categoria["nome"], dados_categoria["tipo_indicacao"])
         self.__entidades.append(nova_categoria)
-        self.__tela_categoria.mostra_mensagem(
-            f"✅ Categoria ID {nova_categoria.id} - '{nova_categoria.nome}' cadastrada!"
-        )
+        self.__tela_categoria.mostra_mensagem(f"✅ Categoria '{nova_categoria.nome}' cadastrada com sucesso!")
         self.__tela_categoria.espera_input()
+
+        #### - - - Codigo Antigo - - - ###
+        # dados_tela = self.__tela_categoria.pega_dados_categoria()
+        #
+        # if not dados_tela:
+        #     self.__tela_categoria.mostra_mensagem("ℹ️ Cadastro cancelado.")
+        #     self.__tela_categoria.espera_input()
+        #     return
+        #
+        # nome_categoria = dados_tela["nome"].title()
+        # if self._existe_nome_categoria(nome_categoria):
+        #     self.__tela_categoria.mostra_mensagem(f"❌ Já existe uma categoria com o nome '{nome_categoria}'.")
+        #     self.__tela_categoria.espera_input()
+        #     return
+        #
+        # novo_id = self._gerar_proximo_id()
+        # nova_categoria = Categoria(id_categoria=novo_id,
+        #                             nome=nome_categoria,
+        #                             tipo_indicacao=dados_tela["tipo_indicacao"])
+        # self.__entidades.append(nova_categoria)
+        # self.__tela_categoria.mostra_mensagem(
+        #     f"✅ Categoria ID {nova_categoria.id} - '{nova_categoria.nome}' cadastrada!"
+        # )
+        # self.__tela_categoria.espera_input()
 
     def listar(self, mostrar_msg_voltar=False):
         """Prepara os dados das categorias e os envia para a tela para listagem."""
-        lista_para_tela = [
-            {"id": cat.id, "nome": cat.nome, "tipo_indicacao": cat.tipo_indicacao}
+        # 1. O Controlador prepara os dados para a Tela (lista de dicionários)
+        # 1. O Controlador prepara os dados para a Tela, mesmo que a lista esteja vazia.
+        dados_para_tela = [
+            {"id": cat.id, "nome": cat.nome, "tipo": cat.tipo_indicacao}
             for cat in self.__entidades
         ]
-        self.__tela_categoria.mostra_lista_categorias(lista_para_tela)
-        
+
+        # 2. O Controlador envia os dados para a Tela exibir.
+        self.__tela_categoria.mostra_lista_categorias(dados_para_tela)
+
+        # 3. A pausa (se solicitada) acontece no final, independentemente de a lista estar vazia ou não.
         if mostrar_msg_voltar:
             self.__tela_categoria.espera_input()
-        
+
+        # Opcional: retornar se a lista tem conteúdo pode ser útil para outros métodos
         return bool(self.__entidades)
+
+        ### - - - Código Antigo - - - ###
+
+        # lista_para_tela = [
+        #     {"id": cat.id, "nome": cat.nome, "tipo_indicacao": cat.tipo_indicacao}
+        #     for cat in self.__entidades
+        # ]
+        # self.__tela_categoria.mostra_lista_categorias(lista_para_tela)
+        #
+        # if mostrar_msg_voltar:
+        #     self.__tela_categoria.espera_input()
+        #
+        # return bool(self.__entidades)
 
     def alterar(self):
         """Permite alterar o nome de uma categoria existente."""
