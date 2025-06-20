@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from Entidades.Nacionalidade import Nacionalidade
 
 class PessoaAbstract(ABC):
@@ -35,3 +35,11 @@ class PessoaAbstract(ABC):
     @nacionalidade.setter
     def nacionalidade(self, nacionalidade: Nacionalidade):
         self.__nacionalidade = nacionalidade
+
+    @abstractmethod
+    def get_info_str(self) -> str:
+        """
+        Um método de contrato. Força todas as classes filhas (Ator, Diretor)
+        a implementarem sua própria maneira de se descrever como uma string.
+        """
+        pass
