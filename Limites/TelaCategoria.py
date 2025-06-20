@@ -49,7 +49,7 @@ class TelaCategoria:
             nome_prompt = f"Novo nome (atual: {dados_atuais.get('nome')}): "
             # Em modo de alteração, permitimos que o input seja vazio
             nome_input = input(nome_prompt)
-            # Se o usuário não digitou nada, mantemos o nome antigo. Senão, usamos o novo.
+            # Se o usuário não digitou nada, mantemos o que era antes. Se não, usamos o novo.
             nome_final = nome_input.strip() if nome_input else dados_atuais.get("nome")
         else:
             # MODO CADASTRO: se dados_atuais for None
@@ -58,7 +58,7 @@ class TelaCategoria:
             # Em modo de cadastro, o nome não pode ser vazio
             nome_final = le_string_nao_vazia(nome_prompt)
 
-        # Se em algum momento o nome final for nulo (ex: cancelou o cadastro), paramos.
+        # Se em algum momento o nome final for nulo (ex: cancelou o cadastro), para.
         if not nome_final:
             return None
 

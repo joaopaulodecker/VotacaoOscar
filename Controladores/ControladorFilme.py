@@ -2,6 +2,7 @@ from Entidades.Filme import Filme
 from Entidades.Nacionalidade import Nacionalidade
 from Limites.TelaFilme import TelaFilmes 
 from Excecoes.OpcaoInvalida import OpcaoInvalida
+from Excecoes.EntidadeDuplicadaException import EntidadeDuplicadaException
 
 class ControladorFilmes:
     def __init__(self, controlador_sistema):
@@ -49,38 +50,39 @@ class ControladorFilmes:
                     self.listar_filmes_agrupados_por_nacionalidade(mostrar_msg_voltar=True)
                 elif opcao == 0:
                     break
+            except EntidadeDuplicadaException as e:
+                self.__tela_filmes.mostra_mensagem(str(e))
+                self.__tela_filmes.espera_input()
             except OpcaoInvalida as e:
-                self.__tela_filmes.mostra_mensagem(f"❌ {e}")
+                self.__tela_filmes.mostra_mensagem(f"❌ Ocorreu um erro inesperado: {e}")
                 self.__tela_filmes.espera_input()
             except Exception as e:
                 self.__tela_filmes.mostra_mensagem(f"❌ Ocorreu um erro inesperado: {e}")
                 self.__tela_filmes.espera_input()
 
     def cadastrar(self):
-        lista_diretores = self.__controlador_sistema.controlador_membros.buscar_por_funcao("diretor")
-        dados = self.__tela_filmes.le_dados_filme(diretores_disponiveis=lista_diretores)
-        
-        if not dados or not all(k in dados for k in ["titulo", "ano", "nacionalidade_str", "diretor_id"]):
-            self.__tela_filmes.mostra_mensagem("❌ Cadastro cancelado. Dados incompletos.")
-            self.__tela_filmes.espera_input()
-            return
 
-        if self.existe_titulo_filme(dados["titulo"]):
-            self.__tela_filmes.mostra_mensagem(f"❌ Já existe um filme com o título '{dados['titulo']}'.")
+        # 1. Pede os dados para a Tela. A Tela é responsável pelos inputs.
+        dados_filmes = self.__tela_filmes.pega_dados_filme()
+        if dados_filmes is None:
+            self.__tela_filmes.mostra_mensagem("ℹ️ Cadastro cancelado.")
             self.__tela_filmes.espera_input()
             return
-        
+        # 2. O Controlador valida os dados e lança uma exceção se a regra for violada
+        if self.existe_titulo_filme(dados_filmes["titulo"]):
+            raise EntidadeDuplicadaException(f"❌ Já existe um filme com o título '{dados_filmes['titulo']}'.")
+
+        # 3. O Controlador cria a entidade e manda a Tela mostrar o sucesso.
         novo_id = self._gerar_proximo_id()
-        nacionalidade_obj = Nacionalidade(dados["nacionalidade_str"])
-        
-        filme = Filme(id_filme=novo_id, 
-                      titulo=dados["titulo"], 
-                      ano=dados["ano"], 
-                      diretor_id=dados["diretor_id"],
+        nacionalidade_obj = Nacionalidade(dados_filmes["nacionalidade_str"])
+        novo_filme = Filme(id_filme=novo_id,
+                      titulo=dados_filmes["titulo"],
+                      ano=dados_filmes["ano"],
+                      diretor_id=dados_filmes["diretor_id"],
                       nacionalidade=nacionalidade_obj)
-        self.__filmes.append(filme)
-        
-        self.__tela_filmes.mostra_mensagem(f"✅ Filme '{filme.titulo}' cadastrado com sucesso!")
+
+        self.__filmes.append(novo_filme)
+        self.__tela_filmes.mostra_mensagem(f"✅ Filme '{novo_filme.titulo}' cadastrado com sucesso!")
         self.__tela_filmes.espera_input()
 
     def _preparar_dados_filme_para_tela(self, filme_obj, indice=None):
@@ -107,18 +109,26 @@ class ControladorFilmes:
         }
         return dados_para_tela
 
-    def listar(self, mostrar_msg_voltar=False, com_indices=False):
-        if not self.__filmes:
-            self.__tela_filmes.mostra_mensagem("📭 Nenhum filme cadastrado.")
-        else:
-            lista_para_tela = []
-            for i, filme in enumerate(self.__filmes):
-                dados_filme = self._preparar_dados_filme_para_tela(filme, indice=i + 1 if com_indices else None)
-                lista_para_tela.append(dados_filme)
-            self.__tela_filmes.mostra_lista_filmes(lista_para_tela)
-        
+    def listar(self, mostrar_msg_voltar=False):
+        dados_para_tela = []
+
+        for filme in self.__filmes:
+            #Pega diretor objeto, nome, nome da nacionalidade
+            diretor_obj = self.__controlador_sistema.controlador_membros.buscar_por_id(filme.diretor_id)
+            diretor_nome = diretor_obj.nome if diretor_obj else "Nao encontrado"
+            nacionalidade_nome = filme.nacionalidade.pais
+
+            #Monta o dicionário dos dados e adiciona à lista
+            dados_para_tela.append({"id": filme.id_filme, "titulo": filme.titulo, "ano": filme.ano, "diretor_nome": diretor_nome,
+                                    "nacionalidade": nacionalidade_nome}
+                                   )
+
+        #Envia os dados para a tela
+        self.__tela_filmes.mostra_lista_filmes(dados_para_tela)
         if mostrar_msg_voltar:
             self.__tela_filmes.espera_input()
+
+        return bool(self.__filmes)
 
     def listar_filmes_agrupados_por_nacionalidade(self, mostrar_msg_voltar=True):
         if not self.__filmes:
@@ -145,7 +155,7 @@ class ControladorFilmes:
             self.__tela_filmes.espera_input()
 
     def alterar(self):
-        self.listar(com_indices=False)
+        self.listar()
         if not self.__filmes:
             return
 
@@ -172,7 +182,7 @@ class ControladorFilmes:
             "nacionalidade_str": filme_alvo.nacionalidade.pais if filme_alvo.nacionalidade else ""
         }
         
-        novos_dados = self.__tela_filmes.le_dados_filme(dados_atuais=dados_atuais_para_tela, diretores_disponiveis=lista_diretores)
+        novos_dados = self.__tela_filmes.pega_dados_filme(dados_atuais=dados_atuais_para_tela, diretores_disponiveis=lista_diretores)
 
         if not novos_dados:
             self.__tela_filmes.mostra_mensagem("ℹ️ Nenhuma alteração realizada.")
@@ -188,7 +198,7 @@ class ControladorFilmes:
         self.__tela_filmes.espera_input()
 
     def excluir(self):
-        self.listar(com_indices=False)
+        self.listar()
         if not self.__filmes:
             return
 

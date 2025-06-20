@@ -6,7 +6,7 @@ class TelaFilmes:
 
     def mostra_mensagem(self, msg: str):
         """Exibe uma mensagem genérica para o usuário."""
-        print(msg)
+        print(f"\n{msg}")
 
     def espera_input(self, msg: str = "🔁 Pressione Enter para continuar..."):
         input(msg)
@@ -21,15 +21,7 @@ class TelaFilmes:
         self.mostra_mensagem("5 - Listar Filmes por Nacionalidade")
         self.mostra_mensagem("0 - Voltar")
 
-        while True:
-            opcao_str = input("Escolha a opção: ").strip()
-            if opcao_str.isdigit():
-                valor = int(opcao_str)
-                if 0 <= valor <= 5:
-                    return valor
-            raise OpcaoInvalida(
-                "Opção de menu de filmes inválida. Escolha entre 0 e 5."
-            )
+        return le_num_inteiro("Escolha uma opção: ", min_val=0, max_val=5)
 
     def mostra_lista_filmes(self, filmes_dados: list[dict]):
         """
@@ -38,16 +30,18 @@ class TelaFilmes:
         Args:
             filmes_dados (list[dict]): Lista de filmes a serem exibidos.
         """
-        print("\n--- Lista de Filmes Cadastrados ---")
+        self.mostra_mensagem("\n--- Lista de Filmes Cadastrados ---")
+        if not filmes_dados:
+            self.mostra_mensagem("📭 Nenhum filme cadastrado.")
+            return
+
         for filme_info in filmes_dados:
-            prefixo = f"{filme_info.get('id')}. "
-            if filme_info.get('com_indice', False):
-                prefixo = f"{filme_info.get('indice')}. (ID: {filme_info.get('id')}) "
-            
-            print(f"{prefixo}🎬 {filme_info.get('titulo')} "
-                  f"({filme_info.get('ano')}) "
-                  f"Nac: {filme_info.get('nacionalidade')} "
-                  f"(Dir: {filme_info.get('diretor')})")
+            self.mostra_mensagem(
+                f"ID: {filme_info.get('id')} | "
+                f"Título: {filme_info.get('titulo')} ({filme_info.get('ano')}) | "
+                f"Nacionalidade: {filme_info.get('nacionalidade')} | "
+                f"Diretor: {filme_info.get('diretor_nome')}"
+            )
 
     def mostra_filmes_agrupados(self, filmes_agrupados: dict):
         """
@@ -66,7 +60,7 @@ class TelaFilmes:
                       f"({filme_info.get('ano')}) "
                       f"(Dir: {filme_info.get('diretor')})")
 
-    def le_dados_filme(self, dados_atuais=None, diretores_disponiveis=None):
+    def pega_dados_filme(self, dados_atuais=None, diretores_disponiveis=None):
         """Coleta os dados para um novo filme ou para alteração."""
         self.mostra_mensagem("\n--- Dados do Filme ---")
         dados_coletados = {}
@@ -151,11 +145,8 @@ class TelaFilmes:
         return dados_coletados
     
     def seleciona_filme_por_id(self, mensagem="Digite o ID do filme: "):
-        id_str = input(mensagem).strip()
-        if id_str.isdigit():
-            return int(id_str)
-        self.mostra_mensagem("❌ ID inválido. Por favor, digite um número.")
-        return None
+        """Pede um ID ao usuário e o retorna como inteiro."""
+        return le_num_inteiro(mensagem, permitir_vazio=True)
 
     def confirma_exclusao(self, titulo_filme) -> bool:
         confirmacao = input(
