@@ -1,4 +1,3 @@
-from Entidades.Categoria import Categoria
 from Utils.validadores import le_num_inteiro
 
 class TelaCategoria:

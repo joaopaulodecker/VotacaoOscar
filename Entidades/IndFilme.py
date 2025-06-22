@@ -3,10 +3,9 @@ from Entidades.Filme import Filme
 from Entidades.Categoria import Categoria
 
 class IndFilme(IndicacaoAbstract):
-    def __init__(self, id_indicacao: int, membro_id: int, categoria: Categoria, filme_indicado: Filme):
+    def __init__(self, id_indicacao: int, categoria: Categoria, filme_indicado: Filme):
         super().__init__(
             id_indicacao=id_indicacao,
-            membro_id=membro_id,
             categoria=categoria,
             item_indicado_id=filme_indicado.id_filme,
             tipo_item_indicado="filme"

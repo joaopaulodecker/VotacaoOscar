@@ -1,4 +1,3 @@
-from Excecoes.OpcaoInvalida import OpcaoInvalida
 from Utils.validadores import le_num_inteiro
 
 class TelaIndicacao:

@@ -3,8 +3,6 @@ from Entidades.Ator import Ator
 from Entidades.Diretor import Diretor
 from Entidades.Categoria import Categoria
 from Entidades.Filme import Filme
-from Entidades.Categoria import Categoria
-from Entidades.Filme import Filme
 from Entidades.IndAtor import IndAtor
 from Entidades.IndDiretor import IndDiretor
 from Entidades.IndFilme import IndFilme
@@ -151,7 +149,7 @@ class ControladorIndicacao:
             return self.__controlador_membros.buscar_por_id(id_membro)
 
         elif tipo_item == "diretor":
-            membros_aptos = self.__controlador_membros.buscar_por_funcao("diretor")
+            membros_aptos = self.__controlador_membros.buscar_por_funcao_e_genero("diretor")
             if not membros_aptos:
                 self.__tela_indicacao.mostra_mensagem(
                     f"❌ Nenhum(a) {tipo_item.capitalize()} cadastrado."
@@ -164,16 +162,15 @@ class ControladorIndicacao:
         return None
 
 
-    def _criar_objeto_indicacao(self, id_ind, membro_id, cat_obj, item_obj):
+    def _criar_objeto_indicacao(self, id_ind, cat_obj, item_obj):
         """Cria a instância correta da classe de indicação."""
         if isinstance(item_obj, Filme):
-            return IndFilme(id_ind, item_obj, cat_obj)
+            return IndFilme(id_indicacao=id_ind, categoria=cat_obj, filme_indicado=item_obj)
         elif isinstance(item_obj, Ator):
-            return IndAtor(id_ind, item_obj, cat_obj)
+            return IndAtor(id_indicacao=id_ind, categoria=cat_obj, ator_indicado=item_obj)
         elif isinstance(item_obj, Diretor):
-            return IndDiretor(id_ind, item_obj, cat_obj)
+            return IndDiretor(id_indicacao=id_ind, categoria=cat_obj, diretor_indicado=item_obj)
         return None
-
         # ===============================================================
         # NOVOS MÉTODOS: Excluir, Alterar e seus auxiliares
         # ===============================================================
@@ -276,22 +273,22 @@ class ControladorIndicacao:
     def get_finalistas_por_categoria(self, categoria_id: int, limite: int = 5):
         """Calcula e retorna os finalistas para uma categoria."""
         indicacoes_da_categoria = [
-            ind for ind in self.__indicacoes 
+            ind for ind in self.__indicacoes
             if ind.categoria.id == categoria_id
         ]
         if not indicacoes_da_categoria:
             return []
 
         contagem = Counter(
-            (ind.item_indicado_id, ind.tipo_item_indicado) 
+            (ind.item_indicado_id, ind.tipo_item_indicado)
             for ind in indicacoes_da_categoria
         )
         if not contagem:
             return []
-            
+
         mapa_info = {
-            (ind.item_indicado_id, ind.tipo_item_indicado): 
-            ind.obter_detalhes_item_indicado() 
+            (ind.item_indicado_id, ind.tipo_item_indicado):
+            ind.obter_detalhes_item_indicado()
             for ind in indicacoes_da_categoria
         }
 
@@ -303,7 +300,7 @@ class ControladorIndicacao:
             chaves_finalistas = [
                 item[0] for item in ordenados if item[1] >= contagem_corte
             ]
-            
+
         return [
             {
                 "id_original_indicado": chave[0],

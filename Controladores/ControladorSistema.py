@@ -1,6 +1,6 @@
 from Limites.TelaSistema import TelaSistema
 from Controladores.ControladorFilme import ControladorFilmes
-from Controladores.ControladorCadastro import ControladorCadastro
+from Controladores.ControladorMembros import ControladorMembros
 from Controladores.ControladorIndicacao import ControladorIndicacao
 from Controladores.ControladorVotacao import ControladorVotacao
 from Controladores.ControladorCategoria import ControladorCategorias
@@ -14,15 +14,15 @@ class ControladorSistema:
     def __init__(self):
         self.__tela_sistema = TelaSistema()
         self.__fase_atual_premiacao = ControladorSistema.FASE_INDICACOES_ABERTAS
-        
-        self.__controlador_membros = ControladorCadastro("membro")
+
+        self.__controlador_membros = ControladorMembros(self)
         self.__controlador_categorias = ControladorCategorias()
         self.__controlador_filmes = ControladorFilmes(self)
         self.__controlador_indicacao = ControladorIndicacao(
             self, self.__controlador_membros, self.__controlador_categorias, self.__controlador_filmes
         )
         self.__controlador_votacao = ControladorVotacao(
-            self, self.__controlador_membros, self.__controlador_categorias, 
+            self, self.__controlador_membros, self.__controlador_categorias,
             self.__controlador_filmes, self.__controlador_indicacao
         )
 
@@ -37,7 +37,7 @@ class ControladorSistema:
     @property
     def controlador_filmes(self):
         return self.__controlador_filmes
-    
+
     @property
     def controlador_indicacao(self):
         return self.__controlador_indicacao
@@ -61,9 +61,9 @@ class ControladorSistema:
         self.__tela_sistema.espera_input()
 
     def _listar_membros_por_funcao(self, funcao: str, titulo: str):
-        membros_encontrados = self.__controlador_membros.buscar_por_funcao(funcao)
+        membros_encontrados = self.__controlador_membros.buscar_por_funcao_e_genero(funcao)
         lista_formatada = [
-            f"   ID: {membro.get('id', 'N/A')} | Nome: {membro.get('nome', 'N/A')}"
+            f" ID: {membro.id} | Nome: {membro.nome}"
             for membro in membros_encontrados
         ]
         self.__tela_sistema.mostra_lista(titulo, lista_formatada)
@@ -74,7 +74,7 @@ class ControladorSistema:
             try:
                 fase_formatada = self.fase_atual_premiacao.replace('_', ' ').title()
                 self.__tela_sistema.mostra_mensagem(f"\n--- Fase Atual: {fase_formatada} ---")
-                
+
                 opcao = self.__tela_sistema.mostra_opcoes()
 
                 if opcao == 1:
@@ -98,7 +98,7 @@ class ControladorSistema:
                 elif opcao == 0:
                     self.__tela_sistema.mostra_mensagem("Saindo do sistema Oscar...")
                     break
-            
+
             except OpcaoInvalida as e:
                 self.__tela_sistema.mostra_mensagem(f"❌ {e}")
                 self.__tela_sistema.espera_input()

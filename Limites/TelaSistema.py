@@ -19,7 +19,7 @@ class TelaSistema:
 
     def mostra_opcoes(self) -> int:
         self.mostra_mensagem("\n⭐ ----- MENU PRINCIPAL OSCAR ----- ⭐")
-        self.mostra_mensagem("1 - Gerenciar Membros da Academia")
+        self.mostra_mensagem("1 - Gerenciar Pessoas")
         self.mostra_mensagem("2 - Listar Atores")
         self.mostra_mensagem("3 - Listar Diretores")
         self.mostra_mensagem("4 - Gerenciar Filmes")

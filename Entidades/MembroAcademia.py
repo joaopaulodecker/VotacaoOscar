@@ -4,25 +4,15 @@ from Entidades.Nacionalidade import Nacionalidade
 class MembroAcademia(PessoaAbstract):
     def __init__(
         self,
-        id_membro: int,
+        id_: int,
         nome: str,
         data_nascimento: int,
         nacionalidade: Nacionalidade,
         funcao: str
     ):
-        super().__init__(nome, data_nascimento, nacionalidade)
-        self.__id_membro = id_membro
+        super().__init__(id_, nome, data_nascimento, nacionalidade)
         self.__funcao = funcao
 
-    @property
-    def id(self) -> int:
-        return self.__id_membro
-
-    @id.setter
-    def id(self, id_membro: int):
-        if not isinstance(id_membro, int):
-            raise TypeError("ID do membro deve ser um inteiro.")
-        self.__id_membro = id_membro
 
     @property
     def funcao(self) -> str:
@@ -31,4 +21,8 @@ class MembroAcademia(PessoaAbstract):
     @funcao.setter
     def funcao(self, funcao: str):
         self.__funcao = funcao
+
+
+    def get_info_str(self) -> str:
+        return f"Nome: {self.nome}, Função: {self.funcao.capitalize()}"
 

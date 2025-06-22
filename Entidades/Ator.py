@@ -6,12 +6,12 @@ from Entidades.Nacionalidade import Nacionalidade
 class Ator(PessoaAbstract):
 
     def __init__(
-        self,
+        self, id_: int,
         nome: str,
         data_nascimento: int,
         nacionalidade: Nacionalidade, genero_artistico: str
     ):
-        super().__init__(nome, data_nascimento, nacionalidade)
+        super().__init__(id_, nome, data_nascimento, nacionalidade)
         if genero_artistico.capitalize() not in ["Ator", "Atriz"]:
             raise ValueError("Gênero artístico deve ser 'Ator' ou 'Atriz'.")
         self.__genero_artistico = genero_artistico.capitalize()

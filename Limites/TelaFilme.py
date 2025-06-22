@@ -1,5 +1,3 @@
-from Excecoes.OpcaoInvalida import OpcaoInvalida
-from Entidades.Nacionalidade import Nacionalidade
 from Utils.validadores import le_num_inteiro
 
 class TelaFilmes:

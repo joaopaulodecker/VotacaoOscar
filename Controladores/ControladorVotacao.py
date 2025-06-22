@@ -1,6 +1,7 @@
 from collections import Counter
-from Entidades.Categoria import Categoria
 from Entidades.Voto import Voto
+from Entidades.PessoaAbstract import PessoaAbstract
+from Entidades.Categoria import Categoria
 from Excecoes.OpcaoInvalida import OpcaoInvalida
 from Limites.TelaVotacao import TelaVotacao
 
@@ -22,15 +23,18 @@ class ControladorVotacao:
         return id_atual
 
     def _preparar_dados_para_selecao(self, lista_entidades: list) -> list[dict]:
-        """Converte listas de entidades ou dicionários em um formato para a tela."""
+        """Converte listas de entidades (Categoria, Pessoa, etc.) em um formato para a tela."""
         dados_para_tela = []
         for item in lista_entidades:
-            if isinstance(item, Categoria):
-                dados_para_tela.append({"id": item.id, "info": f"ID: {item.id} - Nome: {item.nome}"})
-            elif isinstance(item, dict):
-                dados_para_tela.append({"id": item.get('id'), "info": f"ID: {item.get('id')} - Nome: {item.get('nome')}"})
+            # Se o item for qualquer classe filha de PessoaAbstract (Ator, Diretor...)...
+            if isinstance(item, PessoaAbstract):
+                # Usamos o metodo do próprio objeto para se descrever!
+                info = item.get_info_str()
+                dados_para_tela.append({"id": item.id, "info": info})
+            elif isinstance(item, Categoria):
+                info = f"ID: {item.id} - Nome: {item.nome}"
+                dados_para_tela.append({"id": item.id, "info": info})
         return dados_para_tela
-
     def abrir_menu_votacao(self):
         """Exibe o menu de votação e processa a escolha do usuário."""
         while True:
@@ -61,7 +65,7 @@ class ControladorVotacao:
         
         self.__tela_votacao.mostra_mensagem("\n--- Iniciar Votação ---")
 
-        membros = self.__controlador_membros.entidades
+        membros = self.__controlador_membros.membros
         if not membros:
             self.__tela_votacao.mostra_mensagem("❌ Nenhum membro da academia cadastrado para votar.")
             self.__tela_votacao.espera_input()
@@ -73,8 +77,8 @@ class ControladorVotacao:
             self.__tela_votacao.espera_input()
             return
         membro_id_votante = membro_votante_dict.get("id")
-        
-        funcao_votante = self.__controlador_membros.buscar_por_id(membro_id_votante).get('funcao', '').lower()
+        membro_obj = self.__controlador_membros.buscar_por_id(membro_id_votante)
+        funcao_votante = membro_obj.funcao if membro_obj else ""
 
         categorias = self.__controlador_categorias.entidades
         if not categorias:
@@ -156,7 +160,7 @@ class ControladorVotacao:
                 if filme: nome_item = filme.titulo
             elif voto.tipo_item_indicado in ["ator", "diretor"]:
                 membro = self.__controlador_membros.buscar_por_id(voto.item_indicado_id)
-                if membro: nome_item = membro.get("nome")
+                if membro: nome_item = membro.nome
             
             resultados[cat_id]["contagem_votos"][f"{nome_item} (ID: {voto.item_indicado_id})"] += 1
 
