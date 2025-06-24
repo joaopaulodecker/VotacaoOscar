@@ -1,153 +1,114 @@
-from Utils.validadores import le_num_inteiro
+import PySimpleGUI as sg
 
 class TelaFilmes:
+    def __init__(self):
+        self.__window = None
 
-    def mostra_mensagem(self, msg: str):
-        """Exibe uma mensagem genérica para o usuário."""
-        print(f"\n{msg}")
+    def init_components_lista(self, filmes_lista, diretores_map):
+        sg.theme('Reddit')
+        
+        headings = ['ID', 'Título', 'Ano', 'Nacionalidade', 'Diretor']
+        
+        dados_tabela = []
+        for filme in filmes_lista:
+            nome_diretor = diretores_map.get(filme.diretor_id, "ID não encontrado")
+            dados_tabela.append([
+                filme.id_filme, filme.titulo, filme.ano, 
+                filme.nacionalidade.pais, nome_diretor
+            ])
 
-    def espera_input(self, msg: str = "🔁 Pressione Enter para continuar..."):
-        input(msg)
+        layout = [
+            [sg.Text('Gerenciador de Filmes', font=('Helvetica', 25))],
+            [sg.Table(values=dados_tabela, headings=headings, max_col_width=35,
+                      auto_size_columns=True, justification='left', num_rows=10,
+                      key='-TABELA-', row_height=25, enable_events=True)],
+            [
+                sg.Button('Adicionar', key='-ADICIONAR-'),
+                sg.Button('Editar', key='-EDITAR-'),
+                sg.Button('Excluir', key='-EXCLUIR-'),
+                sg.Button('Agrupar por Nacionalidade', key='-AGRUPAR-'),
+                sg.Button('Voltar', key='-VOLTAR-')
+            ]
+        ]
 
-    def mostra_opcoes(self) -> int:
-        """Exibe o menu de opções e retorna a escolha validada do usuário."""
-        self.mostra_mensagem("\n----- FILMES -----")
-        self.mostra_mensagem("1 - Cadastrar Filme")
-        self.mostra_mensagem("2 - Alterar Filme")
-        self.mostra_mensagem("3 - Excluir Filme")
-        self.mostra_mensagem("4 - Listar Filmes")
-        self.mostra_mensagem("5 - Listar Filmes por Nacionalidade")
-        self.mostra_mensagem("0 - Voltar")
+        self.__window = sg.Window('Filmes', layout, finalize=True)
 
-        return le_num_inteiro("Escolha uma opção: ", min_val=0, max_val=5)
+    def pega_dados_filme(self, diretores_lista, dados_atuais: dict = None):
+        is_edicao = bool(dados_atuais)
+        titulo_janela = "Editar Filme" if is_edicao else "Adicionar Novo Filme"
+        
+        titulo_default = dados_atuais.get('titulo', '')
+        ano_default = dados_atuais.get('ano', '')
+        nac_default = dados_atuais.get('nacionalidade_str', '')
+        
+        diretor_selecionado_default = None
+        if is_edicao and dados_atuais.get('diretor_id'):
+            for diretor in diretores_lista:
+                if diretor.id == dados_atuais['diretor_id']:
+                    diretor_selecionado_default = f"ID: {diretor.id} - {diretor.nome}"
+                    break
+        
+        mapa_diretores_display = [f"ID: {d.id} - {d.nome}" for d in diretores_lista]
 
-    def mostra_lista_filmes(self, filmes_dados: list[dict]):
-        """
-        Recebe uma lista de dicionários com dados de filmes e os exibe.
+        layout_form = [
+            [sg.Text('Título:', size=(15,1)), sg.Input(default_text=titulo_default, key='-TITULO-')],
+            [sg.Text('Ano:', size=(15,1)), sg.Input(default_text=ano_default, key='-ANO-')],
+            [sg.Text('Nacionalidade:', size=(15,1)), sg.Input(default_text=nac_default, key='-NACIONALIDADE-')],
+            [sg.Text('Diretor:', size=(15,1)), sg.Combo(mapa_diretores_display, default_value=diretor_selecionado_default, readonly=True, key='-DIRETOR-', expand_x=True)],
+            [sg.Submit('Salvar'), sg.Cancel('Cancelar')]
+        ]
 
-        Args:
-            filmes_dados (list[dict]): Lista de filmes a serem exibidos.
-        """
-        self.mostra_mensagem("\n--- Lista de Filmes Cadastrados ---")
-        if not filmes_dados:
-            self.mostra_mensagem("📭 Nenhum filme cadastrado.")
-            return
+        form_window = sg.Window(titulo_janela, layout_form)
+        event, values = form_window.read()
+        form_window.close()
 
-        for filme_info in filmes_dados:
-            self.mostra_mensagem(
-                f"ID: {filme_info.get('id')} | "
-                f"Título: {filme_info.get('titulo')} ({filme_info.get('ano')}) | "
-                f"Nacionalidade: {filme_info.get('nacionalidade')} | "
-                f"Diretor: {filme_info.get('diretor_nome')}"
-            )
+        if event == 'Salvar':
+            if all(str(v).strip() for k, v in values.items() if k != '-DIRETOR-') and values['-DIRETOR-']:
+                try:
+                    values['-ANO-'] = int(values['-ANO-'])
+                    # Extrai o ID do diretor da string selecionada
+                    id_diretor_str = values['-DIRETOR-'].split(' ')[1]
+                    values['-DIRETOR_ID-'] = int(id_diretor_str)
+                    return values
+                except (ValueError, TypeError):
+                    self.show_message("Erro de Validação", "O ano deve ser um número inteiro.")
+                    return None
+            else:
+                self.show_message("Erro de Validação", "Todos os campos são obrigatórios.")
+                return None
+        return None
 
     def mostra_filmes_agrupados(self, filmes_agrupados: dict):
-        """
-        Recebe um dicionário de filmes agrupados por nacionalidade e os exibe.
-
-        Args:
-            filmes_agrupados (dict): Dicionário com nacionalidades como chaves
-                                    e listas de dicionários de filmes como valores.
-        """
-        print("\n--- Filmes Agrupados por Nacionalidade ---")
+        texto_final = ""
         for pais, lista_filmes in filmes_agrupados.items():
-            print(f"\n🌍 Nacionalidade: {pais}")
-            print("------------------------------------")
+            texto_final += f"🌍 Nacionalidade: {pais}\n" + "-"*30 + "\n"
             for filme_info in lista_filmes:
-                print(f"  ID: {filme_info.get('id')}. 🎬 {filme_info.get('titulo')} "
-                      f"({filme_info.get('ano')}) "
-                      f"(Dir: {filme_info.get('diretor')})")
-
-    def pega_dados_filme(self, dados_atuais=None, diretores_disponiveis=None):
-        """Coleta os dados para um novo filme ou para alteração."""
-        self.mostra_mensagem("\n--- Dados do Filme ---")
-        dados_coletados = {}
-
-        if dados_atuais:
-            self.mostra_mensagem(
-                "(Deixe em branco para manter o valor atual: "
-                f"'{dados_atuais.get('titulo', '')}')"
-            )
-            titulo_input = input("Novo Título do filme: ").strip()
-            dados_coletados["titulo"] = (titulo_input if titulo_input
-                                         else dados_atuais.get("titulo"))
-        else:
-            dados_coletados["titulo"] = input("Título do filme: ").strip()
-
-        if dados_coletados.get("titulo"):
-            dados_coletados["titulo"] = dados_coletados["titulo"].title()
-
-        if not dados_coletados.get("titulo"):
-            self.mostra_mensagem("❌ Título não pode ser vazio.")
-            return None
-
-        ano_str = ""
-        if dados_atuais:
-            self.mostra_mensagem(
-                f"(Deixe em branco para manter o valor atual: '{dados_atuais.get('ano', '')}')"
-            )
-            ano_input = input("Novo Ano de lançamento: ").strip()
-            ano_str = ano_input if ano_input else str(dados_atuais.get("ano", ""))
-        else:
-            ano_str = input("Ano de lançamento: ").strip()
+                texto_final += f"  ID: {filme_info['id']}. 🎬 {filme_info['titulo']} ({filme_info['ano']}) (Dir: {filme_info['diretor']})\n"
+            texto_final += "\n"
         
-        if not ano_str:
-            self.mostra_mensagem("❌ Ano não pode ser vazio.")
-            return None
-        try:
-            dados_coletados["ano"] = int(ano_str)
-        except ValueError:
-            self.mostra_mensagem("❌ Ano inválido. Deve ser um número inteiro.")
-            return None
+        self.show_message("Filmes Agrupados por Nacionalidade", texto_final)
 
-        nacionalidade_prompt = "Nacionalidade do Filme (país)"
-        if dados_atuais and dados_atuais.get('nacionalidade_str'):
-             nacionalidade_prompt += f" (atual: {dados_atuais['nacionalidade_str']})"
-        nacionalidade_prompt += ": "
-        
-        pais_input_str = input(nacionalidade_prompt).strip()
-        if dados_atuais and not pais_input_str:
-            dados_coletados["nacionalidade_str"] = dados_atuais.get('nacionalidade_str')
-        else:
-            if not pais_input_str:
-                self.mostra_mensagem("❌ Nacionalidade (país) é obrigatória.")
-                return None
-            dados_coletados["nacionalidade_str"] = pais_input_str.title()
-        
-        if diretores_disponiveis and len(diretores_disponiveis) > 0:
-            self.mostra_mensagem("\n--- Diretor do Filme ---")
-            for i, diretor in enumerate(diretores_disponiveis):
-                self.mostra_mensagem(f"  {i+1} - {diretor.get('nome')} "
-                                     f"(ID: {diretor.get('id')})")
-            
-            prompt_base = f"Escolha o número do diretor (1-{len(diretores_disponiveis)})"
-            if dados_atuais and dados_atuais.get('diretor_id'):
-                prompt_base += f" (atual: ID {dados_atuais['diretor_id']})"
-                
-            escolha = le_num_inteiro(prompt_base + ": ",
-                                     min_val=0 if dados_atuais else 1, # Permite 0 para manter
-                                     max_val=len(diretores_disponiveis))
-            
-            if dados_atuais and escolha == 0:
-                dados_coletados["diretor_id"] = dados_atuais.get('diretor_id')
-            elif escolha is not None:
-                dados_coletados["diretor_id"] = diretores_disponiveis[escolha - 1].get('id')
-            else:
-                return None # Cancelado ou inválido
-        elif not dados_atuais:
-            self.mostra_mensagem("❌ Não há diretores para selecionar.")
-            return None
-        else:
-            dados_coletados["diretor_id"] = dados_atuais.get('diretor_id')
+    def open_lista(self):
+        event, values = self.__window.read()
+        return event, values
 
-        return dados_coletados
-    
-    def seleciona_filme_por_id(self, mensagem="Digite o ID do filme: "):
-        """Pede um ID ao usuário e o retorna como inteiro."""
-        return le_num_inteiro(mensagem, permitir_vazio=True)
+    def close_lista(self):
+        if self.__window:
+            self.__window.close()
+        self.__window = None
 
-    def confirma_exclusao(self, titulo_filme) -> bool:
-        confirmacao = input(
-            f"Tem certeza que deseja excluir o filme '{titulo_filme}'? (S/N): "
-        ).strip().upper()
-        return confirmacao == 'S'
+    def show_message(self, titulo: str, mensagem: str):
+        sg.Popup(titulo, mensagem, grab_anywhere=True)
+
+    def show_confirm_message(self, titulo: str, mensagem: str):
+        return sg.popup_yes_no(mensagem, title=titulo)
+
+    def refresh_table(self, filmes_lista, diretores_map):
+        dados_tabela = []
+        for filme in filmes_lista:
+            nome_diretor = diretores_map.get(filme.diretor_id, "ID não encontrado")
+            dados_tabela.append([
+                filme.id_filme, filme.titulo, filme.ano, 
+                filme.nacionalidade.pais, nome_diretor
+            ])
+        self.__window['-TABELA-'].update(values=dados_tabela)

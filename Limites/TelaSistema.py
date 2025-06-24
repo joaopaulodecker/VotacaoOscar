@@ -1,33 +1,46 @@
-from Utils.validadores import le_num_inteiro
+import PySimpleGUI as sg
 
 class TelaSistema:
+    def __init__(self):
+        self.__window = None
 
-    def mostra_mensagem(self, msg: str):
-        print(msg)
+    def init_components(self, fase_atual_str: str):
+        sg.theme('Reddit')
 
-    def espera_input(self, msg: str = "🔁 Pressione Enter para continuar..."):
-        """Exibe uma mensagem e aguarda o input do usuário para pausar."""
-        input(msg)
-
-    def mostra_lista(self, titulo: str, lista_itens: list[str]):
-        self.mostra_mensagem(titulo)
-        if not lista_itens:
-            self.mostra_mensagem("   (Nenhum item encontrado)")
-        else:
-            for item in lista_itens:
-                self.mostra_mensagem(item)
-
-    def mostra_opcoes(self) -> int:
-        self.mostra_mensagem("\n⭐ ----- MENU PRINCIPAL OSCAR ----- ⭐")
-        self.mostra_mensagem("1 - Gerenciar Pessoas")
-        self.mostra_mensagem("2 - Listar Atores")
-        self.mostra_mensagem("3 - Listar Diretores")
-        self.mostra_mensagem("4 - Gerenciar Filmes")
-        self.mostra_mensagem("5 - Gerenciar Categorias")
-        self.mostra_mensagem("6 - Gerenciar Indicações")
-        self.mostra_mensagem("7 - Gerenciar Votação")
-        self.mostra_mensagem("8 - Ver Resultados da Votação")
-        self.mostra_mensagem("9 - Encerrar Indicações / Abrir Votação")
-        self.mostra_mensagem("0 - Sair do Sistema")
+        layout = [
+            [sg.Text('Sistema de Premiação Oscar', font=('Helvetica', 25), justification='center', expand_x=True)],
+            [sg.Text(f"Fase Atual: {fase_atual_str}", key='-FASE-', font=('Helvetica', 12), justification='center', expand_x=True)],
+            [sg.HorizontalSeparator()],
+            [sg.Button('Gerenciar Pessoas', key='1', size=(25,2)), sg.Button('Listar Atores', key='2', size=(25,2))],
+            [sg.Button('Gerenciar Filmes', key='4', size=(25,2)), sg.Button('Listar Diretores', key='3', size=(25,2))],
+            [sg.Button('Gerenciar Categorias', key='5', size=(25,2)), sg.Button('Gerenciar Indicações', key='6', size=(25,2))],
+            [sg.Button('Gerenciar Votação', key='7', size=(25,2)), sg.Button('Ver Resultados', key='8', size=(25,2))],
+            [sg.HorizontalSeparator()],
+            [sg.Button('Encerrar Indicações / Abrir Votação', key='9', expand_x=True, button_color=('white', 'green'))],
+            [sg.Button('Sair do Sistema', key='0', expand_x=True, button_color=('white', 'red'))]
+        ]
         
-        return le_num_inteiro("Escolha uma opção: ", min_val=0, max_val=9)
+        self.__window = sg.Window(
+            'Menu Principal - Oscar',
+            layout,
+            finalize=True,
+            element_justification='center'
+        )
+
+    def open(self):
+        event, values = self.__window.read()
+        if event == sg.WIN_CLOSED:
+            return '0', values
+        return event, values
+
+    def close(self):
+        if self.__window:
+            self.__window.close()
+        self.__window = None
+    
+    def update_fase(self, nova_fase_str: str):
+        if self.__window:
+            self.__window['-FASE-'].update(f"Fase Atual: {nova_fase_str}")
+
+    def show_message(self, titulo: str, mensagem: str):
+        sg.Popup(titulo, mensagem)

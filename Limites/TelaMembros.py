@@ -1,106 +1,150 @@
-from Utils.validadores import le_num_inteiro, le_string_nao_vazia
+import PySimpleGUI as sg
 from datetime import date
 
-
 class TelaMembros:
-
     def __init__(self):
-        pass
+        self.__window = None
 
-    def mostra_mensagem(self, msg: str):
-        print(f"\n{msg}")
+    def init_components_lista(self, membros_lista):
+        sg.theme('Reddit')
+        
+        headings = ['ID', 'Nome', 'Nascimento', 'Nacionalidade', 'Tipo', 'Gênero Art.']
+        
+        dados_tabela = []
+        for membro in membros_lista:
+            tipo = "Indefinido"
+            genero = "N/A"
+            from Entidades.Ator import Ator
+            from Entidades.Diretor import Diretor
+            
+            if isinstance(membro, Ator):
+                tipo = "Ator/Atriz"
+                genero = membro.genero_artistico
+            elif isinstance(membro, Diretor):
+                tipo = "Diretor(a)"
+            else:
+                tipo = "Membro da Academia"
 
-    def espera_input(self, msg: str = "🔁 Pressione Enter para continuar..."):
-        """Exibe uma mensagem e aguarda o input do usuário para pausar."""
-        input(msg)
+            dados_tabela.append([
+                membro.id, membro.nome, membro.data_nascimento, 
+                membro.nacionalidade.pais, tipo, genero
+            ])
 
-    def mostra_menu_membros(self) -> int:
-        """Exibe o menu específico para o gerenciamento de membros."""
-        self.mostra_mensagem("\n----- GERENCIAR PESSOAS -----")
-        self.mostra_mensagem("1 - Cadastrar Nova Pessoa")
-        self.mostra_mensagem("2 - Alterar Pessoa")
-        self.mostra_mensagem("3 - Excluir Pessoa")
-        self.mostra_mensagem("4 - Listar Pessoas")
-        self.mostra_mensagem("0 - Voltar ao Menu Principal")
-        return le_num_inteiro("Escolha uma opção: ", min_val=0, max_val=4)
+        layout = [
+            [sg.Text('Gerenciador de Pessoas', font=('Helvetica', 25))],
+            [sg.Table(values=dados_tabela, headings=headings, max_col_width=25,
+                      auto_size_columns=True, justification='left', num_rows=10,
+                      key='-TABELA-', row_height=25, enable_events=True)],
+            [
+                sg.Button('Adicionar', key='-ADICIONAR-'),
+                sg.Button('Editar', key='-EDITAR-'),
+                sg.Button('Excluir', key='-EXCLUIR-'),
+                sg.Button('Voltar', key='-VOLTAR-')
+            ]
+        ]
 
-    def mostra_lista_membros(self, membros_dados: list[str]):
-        self.mostra_mensagem("\n--- Lista de Pessoas Cadastradas ---")
-        if not membros_dados:
-            self.mostra_mensagem("📭 Nenhuma pessoa cadastrada.")
-            return
+        self.__window = sg.Window('Membros da Academia', layout, finalize=True)
 
-        for info_str in membros_dados:
-            self.mostra_mensagem(f"- {info_str}")
-
-    def pega_dados_membro(self, dados_atuais: dict = None) -> dict | None:
-        """Coleta dados para cadastrar OU alterar um membro. Se 'dados_atuais' for
-        fornecido, entra em modo de alteração, senão, entra em modo de cadastro."""
-
-        # Modo Alteração
-        if dados_atuais:
-            self.mostra_mensagem("\n--- Alteração de Membro ---")
-            self.mostra_mensagem("Dica: Deixe em branco e pressione Enter para manter o valor atual.")
-
-            nome_prompt = f"Novo nome (atual: {dados_atuais.get('nome')}): "
-            nome_input = input(nome_prompt)
-            nome_final = nome_input.strip() if nome_input else dados_atuais.get("nome")
-
-            data_atual = dados_atuais.get('data_nascimento')
-            data_prompt = f"Novo ano de nascimento (atual: {data_atual}): "
-            data_input = input(data_prompt)
-            data_final = int(data_input) if data_input.isdigit() else data_atual
-
-            return {"nome": nome_final, "data_nascimento": data_final}
-
+    def pega_dados_membro(self, dados_atuais: dict = None):
+        is_edicao = bool(dados_atuais)
+        titulo_janela = "Editar Pessoa" if is_edicao else "Adicionar Nova Pessoa"
+        
+        if is_edicao:
+            nome_default = dados_atuais.get('nome', '')
+            nasc_default = dados_atuais.get('data_nascimento', '')
+            nac_default = dados_atuais.get('nacionalidade_str', '')
+            genero_default = dados_atuais.get('genero_artistico', 'Ator')
         else:
-            self.mostra_mensagem("\n--- Cadastro de Nova Pessoa ---")
-            # 1. Pergunta o tipo de pessoa
-            self.mostra_mensagem("Qual o tipo de pessoa a ser cadastrada?")
-            self.mostra_mensagem("1 - Ator/Atriz")
-            self.mostra_mensagem("2 - Diretor(a)")
-            self.mostra_mensagem("3 - Membro da Academia")
-            tipo_num = le_num_inteiro("Escolha o tipo (deixe em branco para cancelar): ", min_val=1, max_val=3,
-                                      permitir_vazio=True)
-            if tipo_num is None: return None
-            mapa_tipos = {1: 'ator', 2: 'diretor', 3: 'membro'}
-            tipo_pessoa = mapa_tipos[tipo_num]
+            nome_default = ''
+            nasc_default = ''
+            nac_default = ''
+            genero_default = 'Ator'
+        
+        tipo_pessoa = dados_atuais.get('tipo_pessoa', 'ator') if is_edicao else 'ator'
+        
+        layout_form = [
+            [sg.Text('Nome:', size=(15,1)), sg.Input(default_text=nome_default, key='-NOME-')],
+            [sg.Text('Ano Nascimento:', size=(15,1)), sg.Input(default_text=nasc_default, key='-NASCIMENTO-')],
+            [sg.Text('Nacionalidade:', size=(15,1)), sg.Input(default_text=nac_default, key='-NACIONALIDADE-')],
+        ]
 
-            # 2. Coleta os dados comuns usando os validadores
-            nome = le_string_nao_vazia("Nome completo: ")
-            if nome is None: return None
+        if not is_edicao:
+            layout_form.append([sg.Frame('Tipo de Pessoa', [
+                [sg.Radio('Ator/Atriz', 'RADIO_TIPO', default=True, key='-TIPO_ATOR-')],
+                [sg.Radio('Diretor(a)', 'RADIO_TIPO', key='-TIPO_DIRETOR-')],
+                [sg.Radio('Membro Academia', 'RADIO_TIPO', key='-TIPO_MEMBRO-')],
+            ])])
+        
+        layout_form.append([sg.Frame('Dados de Ator/Atriz', [
+            [sg.Radio('Ator', 'RADIO_GENERO', default=(genero_default == 'Ator'), key='-GENERO_ATOR-')],
+            [sg.Radio('Atriz', 'RADIO_GENERO', default=(genero_default == 'Atriz'), key='-GENERO_ATRIZ-')],
+        ], key='-FRAME_ATOR-')])
 
-            # Usando a importação date.today()
-            ano_atual = date.today().year
-            data_nascimento = le_num_inteiro(f"Ano de nascimento (ex: 1980): ", min_val=1900, max_val=ano_atual)
-            if data_nascimento is None: return None
+        layout_form.append([sg.Submit('Salvar'), sg.Cancel('Cancelar')])
 
-            nacionalidade_str = le_string_nao_vazia("País de nacionalidade: ")
-            if nacionalidade_str is None: return None
+        form_window = sg.Window(titulo_janela, layout_form)
+        
+        while True:
+            event, values = form_window.read()
+            if event in (sg.WIN_CLOSED, 'Cancelar'):
+                form_window.close()
+                return None
+            
+            if event == 'Salvar':
+                try:
+                    if not values['-NOME-'].strip():
+                        self.show_message("Erro de Validação", "O campo 'Nome' não pode ser vazio.")
+                        continue
+                    
+                    ano_nasc = int(values['-NASCIMENTO-'])
+                    ano_atual = date.today().year
+                    if not (1900 <= ano_nasc <= ano_atual):
+                         self.show_message("Erro de Validação", f"O ano de nascimento deve estar entre 1900 e {ano_atual}.")
+                         continue
 
-            dados_retorno = {
-                "tipo_pessoa": tipo_pessoa,
-                "nome": nome,
-                "data_nascimento": data_nascimento,
-                "nacionalidade_str": nacionalidade_str
-            }
+                    if not values['-NACIONALIDADE-'].strip():
+                        self.show_message("Erro de Validação", "O campo 'Nacionalidade' não pode ser vazio.")
+                        continue
+                    
+                    form_window.close()
+                    return values
 
-            # 3. Coleta dados específicos apenas se for Ator
-            if tipo_pessoa == 'ator':
-                self.mostra_mensagem("\nQual o gênero artístico?")
-                self.mostra_mensagem("1 - Ator")
-                self.mostra_mensagem("2 - Atriz")
-                genero_num = le_num_inteiro("Escolha o gênero: ", min_val=1, max_val=2)
-                if genero_num is None: return None
-                dados_retorno["genero_artistico"] = "Ator" if genero_num == 1 else "Atriz"
+                except (ValueError, TypeError):
+                    self.show_message("Erro de Validação", "Ano de nascimento deve ser um número válido.")
 
-            return dados_retorno
+    def open_lista(self):
+        event, values = self.__window.read()
+        return event, values
 
-    def pegar_id(self, mensagem="Digite o ID: ") -> int | None:
-        """Pede um ID ao usuário e o retorna como inteiro."""
-        return le_num_inteiro(mensagem, permitir_vazio=True)
+    def close_lista(self):
+        if self.__window:
+            self.__window.close()
+        self.__window = None
 
-    def confirma_exclusao(self, nome_item: str) -> bool:
-        """Pede confirmação do usuário para uma exclusão."""
-        resposta = le_string_nao_vazia(f"Tem certeza que deseja excluir '{nome_item}'? (S/N): ")
-        return resposta is not None and resposta.upper().startswith('S')
+    def show_message(self, titulo: str, mensagem: str):
+        sg.Popup(titulo, mensagem)
+
+    def show_confirm_message(self, titulo: str, mensagem: str):
+        return sg.popup_yes_no(mensagem, title=titulo)
+
+    def refresh_table(self, membros_lista):
+        dados_tabela = []
+        for membro in membros_lista:
+            tipo = "Indefinido"
+            genero = "N/A"
+            from Entidades.Ator import Ator
+            from Entidades.Diretor import Diretor
+            
+            if isinstance(membro, Ator):
+                tipo = "Ator/Atriz"
+                genero = membro.genero_artistico
+            elif isinstance(membro, Diretor):
+                tipo = "Diretor(a)"
+            else:
+                tipo = "Membro da Academia"
+
+            dados_tabela.append([
+                membro.id, membro.nome, membro.data_nascimento, 
+                membro.nacionalidade.pais, tipo, genero
+            ])
+        self.__window['-TABELA-'].update(values=dados_tabela)

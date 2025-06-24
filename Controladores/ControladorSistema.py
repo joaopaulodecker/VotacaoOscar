@@ -4,7 +4,6 @@ from Controladores.ControladorMembros import ControladorMembros
 from Controladores.ControladorIndicacao import ControladorIndicacao
 from Controladores.ControladorVotacao import ControladorVotacao
 from Controladores.ControladorCategoria import ControladorCategorias
-from Excecoes.OpcaoInvalida import OpcaoInvalida
 
 class ControladorSistema:
     FASE_INDICACOES_ABERTAS = "FASE_INDICACOES_ABERTAS"
@@ -45,7 +44,7 @@ class ControladorSistema:
     @property
     def controlador_votacao(self):
         return self.__controlador_votacao
-
+        
     @property
     def fase_atual_premiacao(self) -> str:
         return self.__fase_atual_premiacao
@@ -53,55 +52,49 @@ class ControladorSistema:
     def encerrar_indicacoes_abrir_votacao(self):
         if self.__fase_atual_premiacao == ControladorSistema.FASE_INDICACOES_ABERTAS:
             self.__fase_atual_premiacao = ControladorSistema.FASE_VOTACAO_ABERTA
-            self.__tela_sistema.mostra_mensagem("\n✅ Período de indicações encerrado. Votação liberada!")
+            self.__tela_sistema.show_message("Fase Alterada", "✅ Período de indicações encerrado. Votação liberada!")
         elif self.__fase_atual_premiacao == ControladorSistema.FASE_VOTACAO_ABERTA:
-            self.__tela_sistema.mostra_mensagem("\nℹ️ A votação já está aberta. As indicações já foram encerradas.")
+            self.__tela_sistema.show_message("Aviso", "ℹ️ A votação já está aberta.")
         else:
-            self.__tela_sistema.mostra_mensagem("\nℹ️ A premiação já foi concluída.")
-        self.__tela_sistema.espera_input()
+            self.__tela_sistema.show_message("Aviso", "ℹ️ A premiação já foi concluída.")
 
     def _listar_membros_por_funcao(self, funcao: str, titulo: str):
         membros_encontrados = self.__controlador_membros.buscar_por_funcao_e_genero(funcao)
-        lista_formatada = [
-            f" ID: {membro.id} | Nome: {membro.nome}"
-            for membro in membros_encontrados
-        ]
-        self.__tela_sistema.mostra_lista(titulo, lista_formatada)
-        self.__tela_sistema.espera_input()
+        lista_formatada = [f"ID: {m.id} | Nome: {m.nome}" for m in membros_encontrados]
+        
+        texto_lista = "\n".join(lista_formatada) if lista_formatada else "(Nenhum item encontrado)"
+        
+        self.__tela_sistema.show_message(titulo, texto_lista)
 
     def inicializa_sistema(self):
+        fase_formatada = self.fase_atual_premiacao.replace('_', ' ').title()
+        self.__tela_sistema.init_components(fase_formatada)
+
         while True:
-            try:
-                fase_formatada = self.fase_atual_premiacao.replace('_', ' ').title()
-                self.__tela_sistema.mostra_mensagem(f"\n--- Fase Atual: {fase_formatada} ---")
+            event, values = self.__tela_sistema.open()
+            
+            if event is None or event == '0':
+                break
 
-                opcao = self.__tela_sistema.mostra_opcoes()
+            if event == '1':
+                self.__controlador_membros.abrir_menu()
+            elif event == '2':
+                self._listar_membros_por_funcao("ator", "🎭 Atores Cadastrados:")
+            elif event == '3':
+                self._listar_membros_por_funcao("diretor", "🎬 Diretores Cadastrados:")
+            elif event == '4':
+                self.__controlador_filmes.abre_tela()
+            elif event == '5':
+                self.__controlador_categorias.abrir_menu()
+            elif event == '6':
+                self.__controlador_indicacao.abrir_menu_indicacoes()
+            elif event == '7':
+                self.__controlador_votacao.abrir_menu_votacao()
+            elif event == '8':
+                self.__controlador_votacao.mostrar_resultados()
+            elif event == '9':
+                self.encerrar_indicacoes_abrir_votacao()
+                nova_fase_formatada = self.fase_atual_premiacao.replace('_', ' ').title()
+                self.__tela_sistema.update_fase(nova_fase_formatada)
 
-                if opcao == 1:
-                    self.__controlador_membros.abrir_menu()
-                elif opcao == 2:
-                    self._listar_membros_por_funcao("ator", "\n🎭 Atores Cadastrados:")
-                elif opcao == 3:
-                    self._listar_membros_por_funcao("diretor", "\n🎬 Diretores Cadastrados:")
-                elif opcao == 4:
-                    self.__controlador_filmes.abre_tela()
-                elif opcao == 5:
-                    self.__controlador_categorias.abrir_menu()
-                elif opcao == 6:
-                    self.__controlador_indicacao.abrir_menu_indicacoes()
-                elif opcao == 7:
-                    self.__controlador_votacao.abrir_menu_votacao()
-                elif opcao == 8:
-                    self.__controlador_votacao.mostrar_resultados()
-                elif opcao == 9:
-                    self.encerrar_indicacoes_abrir_votacao()
-                elif opcao == 0:
-                    self.__tela_sistema.mostra_mensagem("Saindo do sistema Oscar...")
-                    break
-
-            except OpcaoInvalida as e:
-                self.__tela_sistema.mostra_mensagem(f"❌ {e}")
-                self.__tela_sistema.espera_input()
-            except Exception as e:
-                self.__tela_sistema.mostra_mensagem(f"❌ Ocorreu um erro geral no sistema: {e}")
-                self.__tela_sistema.espera_input()
+        self.__tela_sistema.close()
