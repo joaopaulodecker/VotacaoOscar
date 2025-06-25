@@ -1,8 +1,7 @@
 from Entidades.Filme import Filme
 from Entidades.Nacionalidade import Nacionalidade
 from Limites.TelaFilme import TelaFilmes
-from Excecoes.EntidadeDuplicadaException import EntidadeDuplicadaException
-from DAOs.filme_dao import FilmeDAO
+from DAOs.FilmeDao import FilmeDAO
 
 class ControladorFilmes:
     def __init__(self, controlador_sistema):
@@ -79,7 +78,7 @@ class ControladorFilmes:
                                diretor_id=dados_filme["-DIRETOR_ID-"],
                                nacionalidade=Nacionalidade(dados_filme["-NACIONALIDADE-"]))
             
-            self.__dao.add(novo_filme)
+            self.__dao.add(novo_id, novo_filme)
             self.__tela_filmes.show_message("Sucesso", f"✅ Filme '{novo_filme.titulo}' cadastrado.")
             
             mapa_diretores = {d.id: d.nome for d in diretores_disponiveis}
@@ -98,13 +97,13 @@ class ControladorFilmes:
                     self.existe_titulo_filme(novos_dados["-TITULO-"], id_excluir=filme_alvo.id_filme)):
                 self.__tela_filmes.show_message("Erro", f"❌ Já existe outro filme com o título '{novos_dados['-TITULO-']}'.")
                 return
-            
+
             filme_alvo.titulo = novos_dados["-TITULO-"]
             filme_alvo.ano = novos_dados["-ANO-"]
             filme_alvo.diretor_id = novos_dados["-DIRETOR_ID-"]
             filme_alvo.nacionalidade = Nacionalidade(novos_dados["-NACIONALIDADE-"])
             
-            self.__dao.add(filme_alvo)
+            self.__dao.add(filme_alvo.id_filme, filme_alvo)
             self.__tela_filmes.show_message("Sucesso", "✅ Filme alterado com sucesso!")
             
             mapa_diretores = {d.id: d.nome for d in diretores_disponiveis}

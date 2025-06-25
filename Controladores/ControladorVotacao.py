@@ -4,6 +4,8 @@ from Entidades.PessoaAbstract import PessoaAbstract
 from Entidades.Categoria import Categoria
 from Excecoes.OpcaoInvalida import OpcaoInvalida
 from Limites.TelaVotacao import TelaVotacao
+from DAOs.VotoDao import VotoDAO
+
 
 class ControladorVotacao:
     def __init__(self, controlador_sistema, controlador_membros, controlador_categorias,
@@ -14,15 +16,10 @@ class ControladorVotacao:
         self.__controlador_categorias = controlador_categorias
         self.__controlador_filmes = controlador_filmes
         self.__controlador_indicacao = controlador_indicacao
-        self.__votos_registrados = []
-        self.__proximo_id_voto = 1
+        self.__dao = VotoDAO()
 
-    def _gerar_proximo_id_voto(self):
-        id_atual = self.__proximo_id_voto
-        self.__proximo_id_voto += 1
-        return id_atual
-
-    def _preparar_dados_para_selecao(self, lista_entidades: list) -> list[dict]:
+    @staticmethod
+    def _preparar_dados_para_selecao(lista_entidades: list) -> list[dict]:
         """Converte listas de entidades (Categoria, Pessoa, etc.) em um formato para a tela."""
         dados_para_tela = []
         for item in lista_entidades:
@@ -100,7 +97,7 @@ class ControladorVotacao:
             self.__tela_votacao.espera_input()
             return
 
-        for voto in self.__votos_registrados:
+        for voto in self.__dao.get_all():
             if voto.membro_id == membro_id_votante and voto.categoria.id == categoria_obj.id:
                 self.__tela_votacao.mostra_mensagem(
                     f"⚠️ O membro ID {membro_id_votante} já votou na categoria '{categoria_obj.nome}'."
@@ -124,15 +121,17 @@ class ControladorVotacao:
         id_item_votado = indicado_escolhido.get("id_original_indicado")
         tipo_item_votado = indicado_escolhido.get("tipo_original_indicado")
 
-        novo_voto = Voto(id_voto=self._gerar_proximo_id_voto(),
+        #Lógica de geração de ID segura e moderna.
+        all_ids = [voto.id_voto for voto in self.__dao.get_all()]
+        proximo_id = max(all_ids) + 1 if all_ids else 1
+
+        novo_voto = Voto(id_voto=proximo_id,
                           membro_id=membro_id_votante,
                           categoria=categoria_obj,
                           item_indicado_id=id_item_votado,
                           tipo_item_indicado=tipo_item_votado)
-        self.__votos_registrados.append(novo_voto)
-        if hasattr(categoria_obj, 'adicionar_voto'):
-            categoria_obj.adicionar_voto(novo_voto)
 
+        self.__dao.add(proximo_id, novo_voto)
         self.__tela_votacao.mostra_mensagem(
             f"✅ Voto para '{indicado_escolhido.get('nome_display')}' registrado com sucesso!"
         )
@@ -140,13 +139,13 @@ class ControladorVotacao:
 
     def mostrar_resultados(self):
         """Calcula e delega a exibição dos resultados da votação para a tela."""
-        if not self.__votos_registrados:
+        if not self.__dao.get_all():
             self.__tela_votacao.mostra_mensagem("📭 Nenhum voto registrado ainda.")
             self.__tela_votacao.espera_input()
             return
 
         resultados = {}
-        for voto in self.__votos_registrados:
+        for voto in self.__dao.get_all():
             cat_id = voto.categoria.id
             if cat_id not in resultados:
                 resultados[cat_id] = {

@@ -8,8 +8,6 @@ class IndicacaoAbstract(ABC):
         self.__categoria = categoria
         self.__item_indicado_id = item_indicado_id
         self.__tipo_item_indicado = tipo_item_indicado
-        if self.__categoria and hasattr(self.__categoria, 'adicionar_indicacao'):
-            self.__categoria.adicionar_indicacao(self)
 
     @property
     def id_indicacao(self) -> int:

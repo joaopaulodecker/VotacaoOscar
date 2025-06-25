@@ -1,7 +1,6 @@
 from Entidades.Categoria import Categoria
 from Limites.TelaCategoria import TelaCategoria
-from Excecoes.EntidadeDuplicadaException import EntidadeDuplicadaException
-from DAOs.categoria_dao import CategoriaDAO
+from DAOs.CategoriaDao import CategoriaDAO
 
 class ControladorCategorias:
     # --- CORREÇÃO APLICADA AQUI ---
@@ -69,7 +68,7 @@ class ControladorCategorias:
 
             novo_id = self._gerar_proximo_id()
             nova_categoria = Categoria(novo_id, dados_categoria["-NOME-"], dados_categoria["-TIPO-"])
-            self.__dao.add(nova_categoria)
+            self.__dao.add(novo_id, nova_categoria)
             self.__tela_categoria.show_message("Sucesso", f"✅ Categoria '{nova_categoria.nome}' cadastrada.")
             self.__tela_categoria.refresh_table(self.entidades)
 
@@ -85,7 +84,7 @@ class ControladorCategorias:
                 return
 
             categoria_alvo.nome = novo_nome
-            self.__dao.add(categoria_alvo)
+            self.__dao.add(categoria_alvo.id, categoria_alvo)
             self.__tela_categoria.show_message("Sucesso", "✅ Alteração realizada com sucesso!")
             self.__tela_categoria.refresh_table(self.entidades)
 

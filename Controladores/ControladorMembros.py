@@ -3,8 +3,7 @@ from Entidades.Ator import Ator
 from Entidades.Diretor import Diretor
 from Entidades.MembroAcademia import MembroAcademia
 from Limites.TelaMembros import TelaMembros
-from Excecoes.EntidadeDuplicadaException import EntidadeDuplicadaException
-from DAOs.membro_dao import MembroDAO
+from DAOs.MembroDao import MembroDAO
 
 class ControladorMembros:
     def __init__(self, controlador_sistema):
@@ -76,7 +75,7 @@ class ControladorMembros:
                 novo_membro_obj = MembroAcademia(novo_id, nome, data_nasc, nacionalidade_obj, "membro")
             
             if novo_membro_obj:
-                self.__dao.add(novo_membro_obj)
+                self.__dao.add(novo_id, novo_membro_obj)
                 self.__tela_membros.show_message("Sucesso", "✅ Pessoa cadastrada com sucesso.")
                 self.__tela_membros.refresh_table(self.membros)
 
@@ -107,7 +106,7 @@ class ControladorMembros:
             if isinstance(membro_alvo, Ator):
                 membro_alvo.genero_artistico = "Ator" if novos_dados["-GENERO_ATOR-"] else "Atriz"
             
-            self.__dao.add(membro_alvo)
+            self.__dao.add(membro_alvo.id, membro_alvo)
             self.__tela_membros.show_message("Sucesso", "✅ Alteração realizada com sucesso!")
             self.__tela_membros.refresh_table(self.membros)
 

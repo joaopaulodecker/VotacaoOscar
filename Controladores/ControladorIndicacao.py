@@ -8,7 +8,7 @@ from Entidades.IndDiretor import IndDiretor
 from Entidades.IndFilme import IndFilme
 from Excecoes.OpcaoInvalida import OpcaoInvalida
 from Limites.TelaIndicacao import TelaIndicacao
-
+from DAOs.IndicacaoDao import IndicacaoDAO
 
 class ControladorIndicacao:
 
@@ -19,15 +19,11 @@ class ControladorIndicacao:
         self.__controlador_membros = controlador_membros
         self.__controlador_categorias = controlador_categorias
         self.__controlador_filmes = controlador_filmes
-        self.__indicacoes = []
-        self.__proximo_id_indicacao = 1
+        self.__dao = IndicacaoDAO()
 
-    def _gerar_proximo_id_indicacao(self):
-        id_atual = self.__proximo_id_indicacao
-        self.__proximo_id_indicacao += 1
-        return id_atual
 
-    def _preparar_dados_para_selecao(self, lista_entidades: list) -> list[dict]:
+    @staticmethod
+    def _preparar_dados_para_selecao(lista_entidades: list) -> list[dict]:
         """
         Converte listas de entidades ou dicionários em um formato simples
         para a tela exibir.
@@ -48,6 +44,16 @@ class ControladorIndicacao:
 
         return dados_para_tela
 
+    @staticmethod
+    def _criar_objeto_indicacao(id_ind, cat_obj, item_obj):
+        """Cria a instância correta da classe de indicação."""
+        if isinstance(item_obj, Filme):
+            return IndFilme(id_indicacao=id_ind, categoria=cat_obj, filme_indicado=item_obj)
+        elif isinstance(item_obj, Ator):
+            return IndAtor(id_indicacao=id_ind, categoria=cat_obj, ator_indicado=item_obj)
+        elif isinstance(item_obj, Diretor):
+            return IndDiretor(id_indicacao=id_ind, categoria=cat_obj, diretor_indicado=item_obj)
+        return None
 
     def abrir_menu_indicacoes(self):
         while True:
@@ -109,13 +115,13 @@ class ControladorIndicacao:
             self.__tela_indicacao.espera_input()
             return
 
-
         # 4. Criar e salvar a indicação
-        id_nova_indicacao = self._gerar_proximo_id_indicacao()
-        nova_indicacao = self._criar_objeto_indicacao(id_nova_indicacao, categoria_obj, item_indicado_obj)
+        all_ids = [indicacao.id_indicacao for indicacao in self.__dao.get_all()]
+        proximo_id = max(all_ids) + 1 if all_ids else 1
+        nova_indicacao = self._criar_objeto_indicacao(proximo_id, categoria_obj, item_indicado_obj)
 
         if nova_indicacao:
-            self.__indicacoes.append(nova_indicacao)
+            self.__dao.add(proximo_id, nova_indicacao)
             nome_item = item_indicado_obj.titulo if isinstance(item_indicado_obj, Filme) else item_indicado_obj.nome
             self.__tela_indicacao.mostra_mensagem(
                 f"\n✅ Indicação de '{nome_item}' para '{categoria_obj.nome}' registrada com sucesso!"
@@ -161,19 +167,6 @@ class ControladorIndicacao:
 
         return None
 
-
-    def _criar_objeto_indicacao(self, id_ind, cat_obj, item_obj):
-        """Cria a instância correta da classe de indicação."""
-        if isinstance(item_obj, Filme):
-            return IndFilme(id_indicacao=id_ind, categoria=cat_obj, filme_indicado=item_obj)
-        elif isinstance(item_obj, Ator):
-            return IndAtor(id_indicacao=id_ind, categoria=cat_obj, ator_indicado=item_obj)
-        elif isinstance(item_obj, Diretor):
-            return IndDiretor(id_indicacao=id_ind, categoria=cat_obj, diretor_indicado=item_obj)
-        return None
-        # ===============================================================
-        # NOVOS MÉTODOS: Excluir, Alterar e seus auxiliares
-        # ===============================================================
     def excluir_indicacao(self, alterando: bool = False):
         if self.__controlador_sistema.fase_atual_premiacao != self.__controlador_sistema.FASE_INDICACOES_ABERTAS:
             self.__tela_indicacao.mostra_mensagem("\n❌ Não é possível excluir indicações após o início da votação.")
@@ -181,7 +174,7 @@ class ControladorIndicacao:
             return
 
         self.listar_todas_indicacoes()
-        if not self.__indicacoes:
+        if not self.__dao.get_all():
             return
 
         prompt = "Digite o ID da indicação a excluir: " if not alterando else "Digite o ID da indicação a substituir: "
@@ -197,7 +190,7 @@ class ControladorIndicacao:
         if indicacao_alvo:
             info = indicacao_alvo.obter_detalhes_item_indicado()
             if self.__tela_indicacao.confirma_exclusao(info):
-                self.__indicacoes.remove(indicacao_alvo)
+                self.__dao.remove(id_alvo)
                 self.__tela_indicacao.mostra_mensagem("🗑️ Indicação removida com sucesso!")
             else:
                 self.__tela_indicacao.mostra_mensagem("ℹ️ Operação cancelada.")
@@ -212,18 +205,18 @@ class ControladorIndicacao:
         self.iniciar_indicacao()
 
     def buscar_indicacao_por_id(self, id_busca: int):
-        for indicacao in self.__indicacoes:
+        for indicacao in self.__dao.get_all():
             if indicacao.id_indicacao == id_busca:
                 return indicacao
         return None
 
     def listar_todas_indicacoes(self):
-        if not self.__indicacoes:
+        if not self.__dao.get_all():
             self.__tela_indicacao.mostra_mensagem("\n📭 Nenhuma indicação registrada.")
             return
 
         dados_para_tela = []
-        for ind in self.__indicacoes:
+        for ind in self.__dao.get_all():
             detalhes = ind.obter_detalhes_item_indicado()
             info = (f"ID: {ind.id_indicacao} | Categoria: {ind.categoria.nome} | "
                     f"Indicado: {detalhes}")
@@ -254,7 +247,7 @@ class ControladorIndicacao:
 
         # 3. Controlador prepara os dados para a TELA
         indicacoes_filtradas = [
-            ind for ind in self.__indicacoes
+            ind for ind in self.__dao.get_all()
             if ind.categoria.id == id_cat_escolhida
         ]
 
@@ -273,7 +266,7 @@ class ControladorIndicacao:
     def get_finalistas_por_categoria(self, categoria_id: int, limite: int = 5):
         """Calcula e retorna os finalistas para uma categoria."""
         indicacoes_da_categoria = [
-            ind for ind in self.__indicacoes
+            ind for ind in self.__dao.get_all()
             if ind.categoria.id == categoria_id
         ]
         if not indicacoes_da_categoria:
