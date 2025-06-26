@@ -4,14 +4,20 @@ class TelaCategoria:
     def __init__(self):
         self.__window = None
 
-    def init_components_lista(self, categorias_lista):
-        sg.theme('Reddit')
-        
-        headings = ['ID', 'Nome', 'Tipo de Indicação']
-        
+    @staticmethod
+    def _preparar_dados_tabela(categorias_lista):
+        """Recebe a lista de objetos Categoria e formata para a tabela."""
         dados_tabela = []
         for categoria in categorias_lista:
             dados_tabela.append([categoria.id, categoria.nome, categoria.tipo_indicacao.capitalize()])
+        return dados_tabela
+
+    def init_components_lista(self, categorias_lista):
+        sg.theme('DarkAmber')
+        
+        headings = ['ID', 'Nome', 'Tipo de Indicação']
+        
+        dados_tabela = TelaCategoria._preparar_dados_tabela(categorias_lista)
 
         layout = [
             [sg.Text('Gerenciador de Categorias', font=('Helvetica', 25))],
@@ -43,15 +49,25 @@ class TelaCategoria:
             [sg.Submit('Salvar'), sg.Cancel('Cancelar')]
         ]
 
-        form_window = sg.Window(titulo_janela, layout_form)
-        event, values = form_window.read()
-        form_window.close()
+        form_window = sg.Window(titulo_janela, layout_form, finalize=True)
 
-        if event == 'Salvar':
-            values['-NOME-'] = values['-NOME-'].strip().title()
-            if values['-NOME-']:
+        while True:
+            event, values = form_window.read()
+            if event in (sg.WIN_CLOSED, 'Cancelar'):
+                form_window.close()
+                return None
+
+            if event == 'Salvar':
+                # 1. Validação de Nome
+                nome_categoria = values['-NOME-'].strip().title()
+                if not nome_categoria:
+                    self.show_message("Erro de Validação", "O nome da categoria não pode ser vazio.")
+                    continue # Volta para o loop, forçando a correção
+
+                # Se a validação passou, preparamos os dados e saímos!
+                values['-NOME-'] = nome_categoria
+                form_window.close()
                 return values
-        return None
 
     def open_lista(self):
         event, values = self.__window.read()
@@ -62,14 +78,14 @@ class TelaCategoria:
             self.__window.close()
         self.__window = None
 
-    def show_message(self, titulo: str, mensagem: str):
+    @staticmethod
+    def show_message(titulo: str, mensagem: str):
         sg.Popup(titulo, mensagem)
 
-    def show_confirm_message(self, titulo: str, mensagem: str):
+    @staticmethod
+    def show_confirm_message(titulo: str, mensagem: str):
         return sg.popup_yes_no(mensagem, title=titulo)
 
     def refresh_table(self, categorias_lista):
-        dados_tabela = []
-        for categoria in categorias_lista:
-            dados_tabela.append([categoria.id, categoria.nome, categoria.tipo_indicacao.capitalize()])
+        dados_tabela = TelaCategoria._preparar_dados_tabela(categorias_lista)
         self.__window['-TABELA-'].update(values=dados_tabela)

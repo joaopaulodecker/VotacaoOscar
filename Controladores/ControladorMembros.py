@@ -29,8 +29,32 @@ class ControladorMembros:
                 return True
         return False
 
+    def _preparar_dados_para_tela(self):
+        """
+        Pega a lista de membros do DAO e formata para a tabela da GUI,
+        evitando que a Tela conheça as Entidades.
+        """
+        dados_tabela = []
+        for membro in self.membros:
+            genero = "N/A"
+            if isinstance(membro, Ator):
+                tipo = "Ator/Atriz"
+                genero = membro.genero_artistico
+            elif isinstance(membro, Diretor):
+                tipo = "Diretor(a)"
+            else:
+                tipo = "Membro da Academia"
+
+            dados_tabela.append([
+                membro.id, membro.nome, membro.data_nascimento,
+                membro.nacionalidade.pais, tipo, genero
+            ])
+        return dados_tabela
+
     def abrir_menu(self):
-        self.__tela_membros.init_components_lista(self.membros)
+        dados_formatados = self._preparar_dados_para_tela()
+        self.__tela_membros.init_components_lista(dados_formatados)
+
         while True:
             event, values = self.__tela_membros.open_lista()
 
@@ -77,7 +101,7 @@ class ControladorMembros:
             if novo_membro_obj:
                 self.__dao.add(novo_id, novo_membro_obj)
                 self.__tela_membros.show_message("Sucesso", "✅ Pessoa cadastrada com sucesso.")
-                self.__tela_membros.refresh_table(self.membros)
+                self.__tela_membros.refresh_table(self._preparar_dados_para_tela())
 
     def alterar(self, membro_alvo):
         from Entidades.Ator import Ator
@@ -108,7 +132,7 @@ class ControladorMembros:
             
             self.__dao.add(membro_alvo.id, membro_alvo)
             self.__tela_membros.show_message("Sucesso", "✅ Alteração realizada com sucesso!")
-            self.__tela_membros.refresh_table(self.membros)
+            self.__tela_membros.refresh_table(self._preparar_dados_para_tela())
 
     def excluir(self, membro_alvo):
         confirmado = self.__tela_membros.show_confirm_message(
@@ -118,7 +142,7 @@ class ControladorMembros:
         if confirmado == 'Yes':
             self.__dao.remove(membro_alvo.id)
             self.__tela_membros.show_message("Sucesso", "🗑️ Pessoa removida com sucesso.")
-            self.__tela_membros.refresh_table(self.membros)
+            self.__tela_membros.refresh_table(self._preparar_dados_para_tela())
 
     def buscar_por_id(self, id_busca):
         return self.__dao.get(id_busca)

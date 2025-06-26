@@ -9,6 +9,24 @@ class ControladorFilmes:
         self.__dao = FilmeDAO()
         self.__tela_filmes = TelaFilmes()
 
+    def _preparar_dados_para_tela(self):
+        """
+        Prepara a lista de filmes para a GUI, buscando o nome do diretor
+        e entregando dados puros para a Tela.
+        """
+        filmes = self.filmes
+        diretores = self.__controlador_sistema.controlador_membros.buscar_por_funcao_e_genero("diretor")
+        mapa_diretores = {d.id: d.nome for d in diretores}
+
+        dados_tabela = []
+        for filme in filmes:
+            nome_diretor = mapa_diretores.get(filme.diretor_id, "ID não encontrado")
+            dados_tabela.append([
+                filme.id_filme, filme.titulo, filme.ano,
+                filme.nacionalidade.pais, nome_diretor
+            ])
+        return dados_tabela
+
     @property
     def filmes(self):
         return self.__dao.get_all()
@@ -31,11 +49,9 @@ class ControladorFilmes:
         return False
 
     def abre_tela(self):
-        diretores = self.__controlador_sistema.controlador_membros.buscar_por_funcao_e_genero("diretor")
-        mapa_diretores = {d.id: d.nome for d in diretores}
+        dados_formatados = self._preparar_dados_para_tela()
+        self.__tela_filmes.init_components_lista(dados_formatados)
 
-        self.__tela_filmes.init_components_lista(self.filmes, mapa_diretores)
-        
         while True:
             event, values = self.__tela_filmes.open_lista()
 
@@ -81,8 +97,7 @@ class ControladorFilmes:
             self.__dao.add(novo_id, novo_filme)
             self.__tela_filmes.show_message("Sucesso", f"✅ Filme '{novo_filme.titulo}' cadastrado.")
             
-            mapa_diretores = {d.id: d.nome for d in diretores_disponiveis}
-            self.__tela_filmes.refresh_table(self.filmes, mapa_diretores)
+            self.__tela_filmes.refresh_table(self._preparar_dados_para_tela())
 
     def alterar(self, filme_alvo: Filme):
         diretores_disponiveis = self.__controlador_sistema.controlador_membros.buscar_por_funcao_e_genero("diretor")
@@ -106,8 +121,7 @@ class ControladorFilmes:
             self.__dao.add(filme_alvo.id_filme, filme_alvo)
             self.__tela_filmes.show_message("Sucesso", "✅ Filme alterado com sucesso!")
             
-            mapa_diretores = {d.id: d.nome for d in diretores_disponiveis}
-            self.__tela_filmes.refresh_table(self.filmes, mapa_diretores)
+            self.__tela_filmes.refresh_table(self._preparar_dados_para_tela())
 
     def excluir(self, filme_alvo: Filme):
         confirmado = self.__tela_filmes.show_confirm_message(
@@ -117,10 +131,9 @@ class ControladorFilmes:
         if confirmado == 'Yes':
             self.__dao.remove(filme_alvo.id_filme)
             self.__tela_filmes.show_message("Sucesso", "🗑️ Filme removido com sucesso.")
-            
-            diretores = self.__controlador_sistema.controlador_membros.buscar_por_funcao_e_genero("diretor")
-            mapa_diretores = {d.id: d.nome for d in diretores}
-            self.__tela_filmes.refresh_table(self.filmes, mapa_diretores)
+
+            # Chama o assistente para preparar os dados e atualizar a tabela
+            self.__tela_filmes.refresh_table(self._preparar_dados_para_tela())
 
     def listar_filmes_agrupados_por_nacionalidade(self):
         todos_os_filmes = self.filmes

@@ -1,95 +1,143 @@
-from Utils.validadores import le_num_inteiro
+import PySimpleGUI as sg
+
 
 class TelaIndicacao:
+    def __init__(self):
+        self.__window = None
 
-    def mostra_mensagem(self, msg: str):
-        print(msg)
 
-    def espera_input(self, msg: str = "🔁 Pressione Enter para continuar..."):
-        """Exibe uma mensagem e aguarda o input do usuário para pausar."""
-        input(msg)
+    @staticmethod
+    def _preparar_dados_tabela(indicacoes_lista: list):
+        """Formata a lista de objetos de Indicação para a tabela da tela."""
+        dados_tabela = []
+        for indicacao in indicacoes_lista:
+            dados_tabela.append([
+                indicacao.id_indicacao,
+                indicacao.categoria.nome,
+                indicacao.obter_detalhes_item_indicado()
+            ])
+        return dados_tabela
 
-    def mostra_opcoes_indicacao(self) -> int:
-        """Exibe o menu de opções e retorna a escolha do usuário."""
-        self.mostra_mensagem("\n----- INDICAÇÕES -----")
-        self.mostra_mensagem("1 - Registrar Nova Indicação")
-        self.mostra_mensagem("2 - Alterar Indicação")
-        self.mostra_mensagem("3 - Excluir Indicação")
-        self.mostra_mensagem("4 - Listar Indicações por Categoria")
-        self.mostra_mensagem("0 - Voltar ao Menu Principal")
+    def init_components(self, indicacoes_lista: list):
+        """Cria a janela principal que lista todas as indicações."""
+        sg.theme('DarkAmber')
 
-        return le_num_inteiro("Escolha a opção: ", min_val=0, max_val=4)
+        headings = ['ID', 'Categoria', 'Indicado']
 
-    def _selecionar_item_da_lista(self, lista_dados: list[dict], titulo_selecao: str) -> dict | None:
+        dados_tabela = TelaIndicacao._preparar_dados_tabela(indicacoes_lista)
 
-        if not lista_dados:
-            self.mostra_mensagem(f"Nenhum(a) {titulo_selecao} disponível para seleção.")
+        layout = [
+            [sg.Text('Gerenciador de Indicações', font=('Helvetica', 25))],
+            [sg.Table(values=dados_tabela, headings=headings, max_col_width=35,
+                      auto_size_columns=True, justification='left', num_rows=10,
+                      key='-TABELA-', row_height=25, enable_events=True)],
+            [
+                sg.Button('Adicionar Indicação', key='-ADICIONAR-'),
+                sg.Button('Excluir Indicação', key='-EXCLUIR-'),
+                sg.Button('Voltar', key='-VOLTAR-')
+            ]
+        ]
+        self.__window = sg.Window('Indicações ao Oscar', layout, finalize=True)
+
+    def pega_dados_indicacao(self, categorias_lista: list) -> dict | None:
+        """
+           Abre um formulário para o usuário selecionar a categoria.
+           Retorna um dicionário com a ação 'BUSCAR_FINALISTAS' e o objeto da categoria.
+           """
+        if not categorias_lista:
+            self.show_message("Aviso", "Nenhuma categoria cadastrada para criar uma indicação.")
             return None
-        
-        self.mostra_mensagem(f"\n--- Selecionar {titulo_selecao} ---")
-        for i, item in enumerate(lista_dados):
-            self.mostra_mensagem(f"{i + 1}. {item.get('info', 'Dados indisponíveis')}")
-            
-        try:
-            prompt = (f"Escolha o número do(a) {titulo_selecao.lower()} (1-{len(lista_dados)}) "
-                      "ou 0 para cancelar: ")
-            escolha_num = le_num_inteiro(prompt, min_val=0, max_val=len(lista_dados))
-            
-            if escolha_num is None or escolha_num == 0:
-                self.mostra_mensagem("Seleção cancelada.")
+
+        # Formata os dados para a lista de seleção
+        mapa_categorias = {cat.nome: cat for cat in categorias_lista}
+
+        layout_form = [
+            [sg.Text('Passo 1: Selecione a Categoria', font=('Helvetica', 15))],
+            [sg.Listbox(values=list(mapa_categorias.keys()), size=(50, 8), key='-CATEGORIA-')],
+            [sg.Submit('Próximo'), sg.Cancel('Cancelar')]
+        ]
+
+        form_window = sg.Window("Registrar Nova Indicação - Passo 1", layout_form, finalize=True)
+
+        event, values = form_window.read()
+
+        if event in (sg.WIN_CLOSED, 'Cancelar'):
+            form_window.close()
+            return None
+
+        if event == 'Próximo':
+            # Validação: Garante que o usuário selecionou uma categoria
+            if not values['-CATEGORIA-']:
+                self.show_message("Erro", "Você precisa selecionar uma categoria para continuar.")
+                # Fechamos e retornamos None para o controlador saber que falhou.
+                form_window.close()
                 return None
 
-            return lista_dados[escolha_num - 1].get('id')
-        except (ValueError, IndexError):
-            self.mostra_mensagem("Entrada inválida. Por favor, digite um número da lista.")
+            # Pega o nome e o objeto da categoria selecionada
+            nome_cat_selecionada = values['-CATEGORIA-'][0]
+            cat_obj_selecionada = mapa_categorias[nome_cat_selecionada]
+
+            form_window.close()
+
+            return {"acao": "BUSCAR_FINALISTAS", "categoria_obj": cat_obj_selecionada}
+
+        form_window.close()
+        return None
+    def preenche_lista_finalistas(self, finalistas: list, categoria_obj):
+        """
+        Abre uma segunda janela (ou atualiza a existente) para mostrar os finalistas.
+        Este é um metodo chamado pelo controlador DEPOIS de buscar os finalistas.
+        """
+        mapa_finalistas = {f.get('nome_display'): f for f in finalistas}
+
+        layout_finalistas = [
+            [sg.Text(f'Categoria: {categoria_obj.nome}', font=('Helvetica', 12), justification='center')],
+            [sg.Text('Passo 2: Selecione o Indicado', font=('Helvetica', 15))],
+            [sg.Listbox(values=list(mapa_finalistas.keys()), size=(40, 10), key='-INDICADO-')],
+            [sg.Submit('Salvar'), sg.Cancel('Cancelar')]
+        ]
+
+        form_window = sg.Window("Registrar Nova Indicação - Passo 2", layout_finalistas, finalize=True)
+
+        event, values = form_window.read()
+
+        if event in (sg.WIN_CLOSED, 'Cancelar'):
+            form_window.close()
             return None
 
-    def seleciona_membro(self, membros_dados: list[dict]) -> dict | None:
-        return self._selecionar_item_da_lista(membros_dados, "Membro da Academia")
+        if event == 'Salvar':
+            if not values['-INDICADO-']:
+                self.show_message("Erro", "Você precisa selecionar um indicado.")
+                return self.preenche_lista_finalistas(finalistas, categoria_obj)
 
-    def seleciona_categoria(self, categorias_dados: list[dict]) -> dict | None:
-        return self._selecionar_item_da_lista(categorias_dados, "Categoria")
+            nome_indicado = values['-INDICADO-'][0]
+            indicado_obj_completo = mapa_finalistas[nome_indicado]
 
-    def seleciona_filme(self, filmes_dados: list[dict]) -> dict | None:
-        return self._selecionar_item_da_lista(filmes_dados, "Filme")
+            form_window.close()
+            return {"acao": "SALVAR_INDICACAO", "categoria_obj": categoria_obj, "indicado_obj": indicado_obj_completo}
 
-    def seleciona_membro_por_funcao(self, membros_dados: list, funcao_nome: str) -> dict | None:
-        return self._selecionar_item_da_lista(membros_dados, funcao_nome)
+        return None
 
-    def mostra_lista_indicacoes(self, categoria_nome: str, indicacoes_dados: list[str]):
-        """Exibe as indicações para uma categoria específica."""
+    @staticmethod
+    def show_message(titulo: str, mensagem: str):
+        sg.Popup(titulo, mensagem)
 
-        self.mostra_mensagem(f"\nIndicados para: {categoria_nome}")
+    @staticmethod
+    def show_confirm_message(titulo: str, mensagem: str):
+        return sg.popup_yes_no(mensagem, title=titulo)
 
-        if not indicacoes_dados:
-            self.mostra_mensagem("   Nenhuma indicação para esta categoria ainda.")
-        else:
-            for detalhes_indicacao in indicacoes_dados:
-                self.mostra_mensagem(f"   - {detalhes_indicacao}")
+    def open(self):
+        if self.__window:
+            event, values = self.__window.read()
+            return event, values
+        return None, None
 
-    def mostra_lista_geral_indicacoes(self, indicacoes: list[str]):
-        """Exibe uma lista formatada de todas as indicações registradas."""
-        print("\n--- Lista Geral de Indicações Registradas ---")
-        if not indicacoes:
-            print("📭 Nenhuma indicação registrada até o momento.")
-            return
+    def close(self):
+        if self.__window:
+            self.__window.close()
+        self.__window = None
 
-        for info_str in indicacoes:
-            print(info_str)
-
-    def pega_id_indicacao(self, mensagem_prompt: str) -> int | None:
-        """Pede ao usuário para digitar o ID de uma indicação e o retorna."""
-        print("")
-        # Validador para garantir um número ou None se o usuário cancelar
-        return le_num_inteiro(mensagem_prompt, min_val=1, permitir_vazio=True)
-
-    def confirma_exclusao(self, info_indicacao: str) -> bool:
-        """Mostra os detalhes de uma indicação e pede confirmação para excluir."""
-        from Utils.validadores import le_string_nao_vazia
-        print(f"\nVocê está prestes a excluir a seguinte indicação:")
-        print(f"  -> {info_indicacao}")
-
-        resposta = le_string_nao_vazia("Tem certeza que deseja excluir? (S/N): ")
-
-        # Retorna True se a resposta for 'S' ou 's', False caso contrário
-        return resposta is not None and resposta.upper().startswith('S')
+    def refresh_table(self, indicacoes_lista: list):
+        if self.__window:
+            dados_tabela = TelaIndicacao._preparar_dados_tabela(indicacoes_lista)
+            self.__window['-TABELA-'].update(values=dados_tabela)

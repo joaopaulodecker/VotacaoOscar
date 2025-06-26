@@ -4,22 +4,15 @@ class TelaFilmes:
     def __init__(self):
         self.__window = None
 
-    def init_components_lista(self, filmes_lista, diretores_map):
-        sg.theme('Reddit')
+
+    def init_components_lista(self,  dados_prontos_da_tabela: list):
+        sg.theme('DarkAmber')
         
         headings = ['ID', 'Título', 'Ano', 'Nacionalidade', 'Diretor']
-        
-        dados_tabela = []
-        for filme in filmes_lista:
-            nome_diretor = diretores_map.get(filme.diretor_id, "ID não encontrado")
-            dados_tabela.append([
-                filme.id_filme, filme.titulo, filme.ano, 
-                filme.nacionalidade.pais, nome_diretor
-            ])
 
         layout = [
             [sg.Text('Gerenciador de Filmes', font=('Helvetica', 25))],
-            [sg.Table(values=dados_tabela, headings=headings, max_col_width=35,
+            [sg.Table(values=dados_prontos_da_tabela, headings=headings, max_col_width=35,
                       auto_size_columns=True, justification='left', num_rows=10,
                       key='-TABELA-', row_height=25, enable_events=True)],
             [
@@ -58,25 +51,37 @@ class TelaFilmes:
             [sg.Submit('Salvar'), sg.Cancel('Cancelar')]
         ]
 
-        form_window = sg.Window(titulo_janela, layout_form)
-        event, values = form_window.read()
-        form_window.close()
-
-        if event == 'Salvar':
-            if all(str(v).strip() for k, v in values.items() if k != '-DIRETOR-') and values['-DIRETOR-']:
-                try:
-                    values['-ANO-'] = int(values['-ANO-'])
-                    # Extrai o ID do diretor da string selecionada
-                    id_diretor_str = values['-DIRETOR-'].split(' ')[1]
-                    values['-DIRETOR_ID-'] = int(id_diretor_str)
-                    return values
-                except (ValueError, TypeError):
-                    self.show_message("Erro de Validação", "O ano deve ser um número inteiro.")
-                    return None
-            else:
-                self.show_message("Erro de Validação", "Todos os campos são obrigatórios.")
+        form_window = sg.Window(titulo_janela, layout_form, finalize=True)
+        while True:
+            event, values = form_window.read()
+            if event in (sg.WIN_CLOSED, 'Cancelar'):
+                form_window.close()
                 return None
-        return None
+
+            if event == 'Salvar':
+                erros = []
+                if not values['-TITULO-'].strip():
+                    erros.append("O campo 'Título' é obrigatório.")
+                if not values['-NACIONALIDADE-'].strip():
+                    erros.append("O campo 'Nacionalidade' é obrigatório.")
+                if not values['-DIRETOR-']:
+                    erros.append("A seleção de um 'Diretor' é obrigatória.")
+
+                try:
+                    int(values['-ANO-'])  # Apenas checa se é um número, a validação de range fica no controlador
+                except (ValueError, TypeError):
+                    erros.append("O 'Ano' deve ser um número inteiro válido.")
+
+                if erros:
+                    self.show_message("Erros de Validação", "\n".join(erros))
+                    continue
+
+                # Se passou, extrai o ID do diretor e retorna
+                id_diretor_str = values['-DIRETOR-'].split(' ')[1]
+                values['-DIRETOR_ID-'] = int(id_diretor_str)
+                values['-ANO-'] = int(values['-ANO-'])
+                form_window.close()
+                return values
 
     def mostra_filmes_agrupados(self, filmes_agrupados: dict):
         texto_final = ""
@@ -97,18 +102,13 @@ class TelaFilmes:
             self.__window.close()
         self.__window = None
 
-    def show_message(self, titulo: str, mensagem: str):
+    @staticmethod
+    def show_message(titulo: str, mensagem: str):
         sg.Popup(titulo, mensagem, grab_anywhere=True)
 
-    def show_confirm_message(self, titulo: str, mensagem: str):
+    @staticmethod
+    def show_confirm_message(titulo: str, mensagem: str):
         return sg.popup_yes_no(mensagem, title=titulo)
 
-    def refresh_table(self, filmes_lista, diretores_map):
-        dados_tabela = []
-        for filme in filmes_lista:
-            nome_diretor = diretores_map.get(filme.diretor_id, "ID não encontrado")
-            dados_tabela.append([
-                filme.id_filme, filme.titulo, filme.ano, 
-                filme.nacionalidade.pais, nome_diretor
-            ])
-        self.__window['-TABELA-'].update(values=dados_tabela)
+    def refresh_table(self, dados_prontos_da_tabela: list):
+        self.__window['-TABELA-'].update(values=dados_prontos_da_tabela)

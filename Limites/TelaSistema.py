@@ -5,7 +5,7 @@ class TelaSistema:
         self.__window = None
 
     def init_components(self, fase_atual_str: str):
-        sg.theme('Reddit')
+        sg.theme('DarkAmber')
 
         layout = [
             [sg.Text('Sistema de Premiação Oscar', font=('Helvetica', 25), justification='center', expand_x=True)],
