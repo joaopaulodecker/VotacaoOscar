@@ -1,24 +1,19 @@
+# Em DAOs/Dao.py
 import pickle
 from abc import ABC
 
-
 class DAO(ABC):
+    """Classe abstrata para todos os Data Access Objects (DAO)."""
     def __init__(self, datasource=''):
-        """
-        A classe abstrata para todos os Data Access Objects.
-        Usa um dicionário como cache para performance e o pickle para persistência.
-        """
         self.__datasource = datasource
         self.__cache = {}
         try:
-            # Tenta carregar o almoxarifado do arquivo
             self.__cache = self.__load()
         except FileNotFoundError:
-            # Se o arquivo não existe, cria um almoxarifado vazio
             self.__dump()
 
     def __dump(self):
-        """Salva o estado ATUAL do cache no arquivo. Simples e direto."""
+        """Salva o estado atual do cache no arquivo."""
         with open(self.__datasource, 'wb') as file:
             pickle.dump(self.__cache, file)
 
@@ -27,7 +22,7 @@ class DAO(ABC):
         with open(self.__datasource, 'rb') as file:
             return pickle.load(file)
 
-    def add(self,key, obj):
+    def add(self, key, obj):
         """Adiciona ou ATUALIZA um objeto no cache usando sua chave (ID)."""
         self.__cache[key] = obj
         self.__dump()
@@ -40,8 +35,14 @@ class DAO(ABC):
         """Remove um objeto do cache pela chave, se ele existir."""
         if key in self.__cache:
             self.__cache.pop(key)
-            self.__dump()  # Salva o estado atualizado
+            self.__dump()
 
     def get_all(self):
         """Retorna uma lista com todos os objetos (valores) do cache."""
         return list(self.__cache.values())
+
+    def get_next_id(self) -> int:
+        """Calcula e retorna o próximo ID sequencial disponível."""
+        if not self.__cache:
+            return 1
+        return max(self.__cache.keys()) + 1

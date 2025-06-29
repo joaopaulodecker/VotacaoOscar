@@ -1,16 +1,15 @@
 from DAOs.Dao import DAO
 from Entidades.Categoria import Categoria
 
-
 class CategoriaDAO(DAO):
-    """DAO responsável pela persistência das Categorias."""
+    """DAO específico para a persistência das Categorias."""
     def __init__(self):
         super().__init__('categorias.pkl')
 
     def add(self, key: int, categoria: Categoria):
-        """Adiciona uma categoria, usando seu ID como chave."""
+        """Adiciona uma categoria ao cache, validando o tipo do objeto."""
         if categoria is not None and isinstance(categoria, Categoria):
-            super().add(categoria.id, categoria)
+            super().add(key, categoria)
 
     def get(self, key: int):
         """Busca uma categoria pelo seu ID (chave)."""
@@ -19,4 +18,3 @@ class CategoriaDAO(DAO):
     def remove(self, key: int):
         """Remove uma categoria pelo seu ID (chave)."""
         return super().remove(key)
-

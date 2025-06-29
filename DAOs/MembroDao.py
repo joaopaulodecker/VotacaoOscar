@@ -2,15 +2,15 @@ from DAOs.Dao import DAO
 from Entidades.PessoaAbstract import PessoaAbstract
 
 class MembroDAO(DAO):
-    """DAO responsável pela persistência dos Membros da Academia."""
+    """DAO específico para a persistência dos Membros (Atores, Diretores, etc.)."""
     def __init__(self):
+        # Garante que os dados sejam salvos no arquivo 'membros.pkl'
         super().__init__('membros.pkl')
 
-    def add(self,key: int, membro: PessoaAbstract):
-        """Adiciona um membro, validando o objeto antes de salvar."""
+    def add(self, key: int, membro: PessoaAbstract):
+        """Adiciona um membro ao cache, validando o tipo do objeto."""
+        # Valida que o objeto é uma subclasse de PessoaAbstract (nosso modelo base para membros)
         if membro is not None and isinstance(membro, PessoaAbstract):
-            # Se o membro já existe, removemos a versão antiga para substituí-la
-            # Importante para a funcionalidade de "alterar"
             super().add(key, membro)
 
     def get(self, key: int):

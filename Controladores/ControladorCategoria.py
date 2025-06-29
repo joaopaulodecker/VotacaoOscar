@@ -2,37 +2,40 @@ from Entidades.Categoria import Categoria
 from Limites.TelaCategoria import TelaCategoria
 from DAOs.CategoriaDao import CategoriaDAO
 
+
 class ControladorCategorias:
-    # --- CORREÇÃO APLICADA AQUI ---
-    # Removido o parâmetro 'controlador_sistema' que não era utilizado
+    """Controlador principal para as regras de negócio de Categorias."""
+
     def __init__(self):
         self.__dao = CategoriaDAO()
         self.__tela_categoria = TelaCategoria()
-    # -----------------------------
 
-    @property
-    def entidades(self):
-        return self.__dao.get_all()
-
-    def _gerar_proximo_id(self):
-        todas_entidades = self.__dao.get_all()
-        if not todas_entidades:
-            return 1
-        return max(cat.id for cat in todas_entidades) + 1
+    def _preparar_dados_tabela(self):
+        """Busca as categorias e as formata para a tabela da interface."""
+        categorias = self.__dao.get_all()
+        dados_tabela = []
+        for categoria in categorias:
+            dados_tabela.append([categoria.id, categoria.nome, categoria.tipo_indicacao.capitalize()])
+        return dados_tabela
 
     def buscar_categoria_por_id(self, id_categoria: int):
+        """Busca uma categoria pelo seu ID no DAO."""
         return self.__dao.get(id_categoria)
 
     def _existe_nome_categoria(self, nome: str, id_excluir: int = None):
+        """Verifica se um nome de categoria já existe."""
         for categoria in self.__dao.get_all():
             if id_excluir is not None and categoria.id == id_excluir:
                 continue
             if categoria.nome.casefold() == nome.casefold():
                 return True
         return False
-    
-    def abrir_menu(self):
-        self.__tela_categoria.init_components_lista(self.entidades)
+
+    def abre_tela(self):
+        """Abre a tela principal e gerencia o loop de eventos."""
+        dados_tabela = self._preparar_dados_tabela()
+        self.__tela_categoria.init_components_lista(dados_tabela)
+
         while True:
             event, values = self.__tela_categoria.open_lista()
 
@@ -41,59 +44,81 @@ class ControladorCategorias:
 
             if event == '-ADICIONAR-':
                 self.cadastrar()
-            
-            # Garante que uma linha da tabela foi selecionada para Editar/Excluir
-            elif values['-TABELA-']:
-                # Pega o índice da linha selecionada
+
+            elif values.get('-TABELA-'):
                 index_selecionado = values['-TABELA-'][0]
-                # Pega o objeto Categoria correspondente a esse índice
-                categoria_selecionada = self.entidades[index_selecionado]
+                id_categoria_selecionada = dados_tabela[index_selecionado][0]
+                categoria_alvo = self.buscar_categoria_por_id(id_categoria_selecionada)
+                if not categoria_alvo: continue
 
                 if event == '-EDITAR-':
-                    self.alterar(categoria_selecionada)
+                    self.alterar(categoria_alvo)
                 elif event == '-EXCLUIR-':
-                    self.excluir(categoria_selecionada)
+                    self.excluir(categoria_alvo)
+
             elif event in ('-EDITAR-', '-EXCLUIR-'):
                 self.__tela_categoria.show_message("Aviso", "Por favor, selecione uma categoria na tabela primeiro.")
+
+            # Sempre atualiza a tabela após uma ação para refletir mudanças
+            dados_tabela = self._preparar_dados_tabela()
+            self.__tela_categoria.refresh_table(dados_tabela)
 
         self.__tela_categoria.close_lista()
 
     def cadastrar(self):
-        dados_categoria = self.__tela_categoria.pega_dados_categoria()
+        """Orquestra o processo de cadastro de uma nova categoria."""
+        dados_brutos = self.__tela_categoria.pega_dados_categoria({
+            'titulo_janela': "Adicionar Categoria"
+        })
 
-        if dados_categoria:
-            if self._existe_nome_categoria(dados_categoria["-NOME-"]):
-                self.__tela_categoria.show_message("Erro", f"❌ Categoria '{dados_categoria['-NOME-']}' já existe.")
+        if dados_brutos:
+            # Controlador faz a validação dos dados brutos recebidos da Tela
+            nome_categoria = dados_brutos["-NOME-"].strip().title()
+            if not nome_categoria:
+                self.__tela_categoria.show_message("Erro de Validação", "O nome da categoria não pode ser vazio.")
                 return
 
-            novo_id = self._gerar_proximo_id()
-            nova_categoria = Categoria(novo_id, dados_categoria["-NOME-"], dados_categoria["-TIPO-"])
-            self.__dao.add(novo_id, nova_categoria)
-            self.__tela_categoria.show_message("Sucesso", f"✅ Categoria '{nova_categoria.nome}' cadastrada.")
-            self.__tela_categoria.refresh_table(self.entidades)
+            if self._existe_nome_categoria(nome_categoria):
+                self.__tela_categoria.show_message("Erro", f"A categoria '{nome_categoria}' já existe.")
+                return
+
+            # Controlador cria o objeto e o salva
+            novo_id = self.__dao.get_next_id()
+            nova_categoria = Categoria(novo_id, nome_categoria, dados_brutos["-TIPO-"])
+            self.__dao.add(key=novo_id, categoria=nova_categoria)
+            self.__tela_categoria.show_message("Sucesso", f"Categoria '{nova_categoria.nome}' cadastrada.")
 
     def alterar(self, categoria_alvo: Categoria):
-        dados_atuais = {'nome': categoria_alvo.nome, 'tipo_indicacao': categoria_alvo.tipo_indicacao}
-        novos_dados = self.__tela_categoria.pega_dados_categoria(dados_atuais=dados_atuais)
+        """Orquestra a alteração de uma categoria existente."""
+        dados_iniciais = {
+            'titulo_janela': "Editar Categoria",
+            'is_edicao': True,
+            'nome': categoria_alvo.nome,
+            'tipo_indicacao': categoria_alvo.tipo_indicacao
+        }
+        dados_brutos = self.__tela_categoria.pega_dados_categoria(dados_iniciais)
 
-        if novos_dados:
-            novo_nome = novos_dados["-NOME-"]
+        if dados_brutos:
+            novo_nome = dados_brutos["-NOME-"].strip().title()
+            if not novo_nome:
+                self.__tela_categoria.show_message("Erro de Validação", "O nome da categoria não pode ser vazio.")
+                return
+
             if (categoria_alvo.nome.casefold() != novo_nome.casefold() and
                     self._existe_nome_categoria(novo_nome, id_excluir=categoria_alvo.id)):
-                self.__tela_categoria.show_message("Erro", f"❌ Já existe outra categoria com o nome '{novo_nome}'.")
+                self.__tela_categoria.show_message("Erro", f"Já existe outra categoria com o nome '{novo_nome}'.")
                 return
 
             categoria_alvo.nome = novo_nome
-            self.__dao.add(categoria_alvo.id, categoria_alvo)
-            self.__tela_categoria.show_message("Sucesso", "✅ Alteração realizada com sucesso!")
-            self.__tela_categoria.refresh_table(self.entidades)
+            self.__dao.add(key=categoria_alvo.id, categoria=categoria_alvo)
+            self.__tela_categoria.show_message("Sucesso", "Alteração realizada com sucesso!")
 
     def excluir(self, categoria_alvo: Categoria):
+        """Orquestra a exclusão de uma categoria."""
         confirmado = self.__tela_categoria.show_confirm_message(
             "Confirmar Exclusão",
             f"Tem certeza que deseja excluir a categoria '{categoria_alvo.nome}'?"
         )
         if confirmado == 'Yes':
             self.__dao.remove(categoria_alvo.id)
-            self.__tela_categoria.show_message("Sucesso", "🗑️ Categoria removida com sucesso.")
-            self.__tela_categoria.refresh_table(self.entidades)
+            self.__tela_categoria.show_message("Sucesso", "Categoria removida com sucesso.")

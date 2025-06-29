@@ -1,26 +1,16 @@
 import PySimpleGUI as sg
 
 class TelaCategoria:
+    """Responsável pela interface gráfica do gerenciamento de Categorias."""
     def __init__(self):
         self.__window = None
-
-    @staticmethod
-    def _preparar_dados_tabela(categorias_lista):
-        """Recebe a lista de objetos Categoria e formata para a tabela."""
-        dados_tabela = []
-        for categoria in categorias_lista:
-            dados_tabela.append([categoria.id, categoria.nome, categoria.tipo_indicacao.capitalize()])
-        return dados_tabela
-
-    def init_components_lista(self, categorias_lista):
         sg.theme('DarkAmber')
-        
-        headings = ['ID', 'Nome', 'Tipo de Indicação']
-        
-        dados_tabela = TelaCategoria._preparar_dados_tabela(categorias_lista)
 
+    def init_components_lista(self, dados_tabela: list):
+        """Prepara a janela principal com a lista de categorias."""
+        headings = ['ID', 'Nome', 'Tipo de Indicação']
         layout = [
-            [sg.Text('Gerenciador de Categorias', font=('Helvetica', 25))],
+            [sg.Text('Gerenciador de Categorias', font=('Helvetica', 25), justification='center', expand_x=True, pad=(0,10))],
             [sg.Table(values=dados_tabela, headings=headings, max_col_width=35,
                       auto_size_columns=True, justification='left', num_rows=10,
                       key='-TABELA-', row_height=25, enable_events=True)],
@@ -28,64 +18,54 @@ class TelaCategoria:
                 sg.Button('Adicionar', key='-ADICIONAR-'),
                 sg.Button('Editar', key='-EDITAR-'),
                 sg.Button('Excluir', key='-EXCLUIR-'),
+                sg.Push(),
                 sg.Button('Voltar', key='-VOLTAR-')
             ]
         ]
-
         self.__window = sg.Window('Categorias', layout, finalize=True)
 
-    def pega_dados_categoria(self, dados_atuais: dict = None):
-        is_edicao = bool(dados_atuais)
-        titulo_janela = "Editar Categoria" if is_edicao else "Adicionar Nova Categoria"
-        
-        nome_default = dados_atuais['nome'] if is_edicao else ''
-        tipo_default = dados_atuais['tipo_indicacao'] if is_edicao else 'filme'
+    def pega_dados_categoria(self, dados_iniciais: dict):
+        """Abre um formulário para Adicionar ou Editar uma categoria e retorna os dados brutos."""
+        titulo_janela = dados_iniciais.get('titulo_janela', "Nova Categoria")
+        is_edicao = dados_iniciais.get('is_edicao', False)
 
         tipos_disponiveis = ['filme', 'ator', 'diretor']
 
         layout_form = [
-            [sg.Text('Nome da Categoria:'), sg.Input(default_text=nome_default, key='-NOME-')],
-            [sg.Text('Tipo de Indicação:'), sg.Combo(tipos_disponiveis, default_value=tipo_default, readonly=True, key='-TIPO-', disabled=is_edicao)],
+            [sg.Text('Nome da Categoria:', size=(15,1)), sg.Input(default_text=dados_iniciais.get('nome', ''), key='-NOME-', expand_x=True)],
+            [sg.Text('Tipo de Indicação:', size=(15,1)), sg.Combo(tipos_disponiveis, default_value=dados_iniciais.get('tipo_indicacao', 'filme'), readonly=True, key='-TIPO-', disabled=is_edicao, expand_x=True)],
             [sg.Submit('Salvar'), sg.Cancel('Cancelar')]
         ]
 
-        form_window = sg.Window(titulo_janela, layout_form, finalize=True)
+        form_window = sg.Window(titulo_janela, layout_form, finalize=True, modal=True)
+        event, values = form_window.read()
+        form_window.close()
 
-        while True:
-            event, values = form_window.read()
-            if event in (sg.WIN_CLOSED, 'Cancelar'):
-                form_window.close()
-                return None
-
-            if event == 'Salvar':
-                # 1. Validação de Nome
-                nome_categoria = values['-NOME-'].strip().title()
-                if not nome_categoria:
-                    self.show_message("Erro de Validação", "O nome da categoria não pode ser vazio.")
-                    continue # Volta para o loop, forçando a correção
-
-                # Se a validação passou, preparamos os dados e saímos!
-                values['-NOME-'] = nome_categoria
-                form_window.close()
-                return values
+        if event == 'Salvar':
+            return values
+        return None
 
     def open_lista(self):
+        """Lê um evento da janela principal de listagem."""
         event, values = self.__window.read()
         return event, values
 
     def close_lista(self):
+        """Fecha a janela principal de listagem."""
         if self.__window:
             self.__window.close()
         self.__window = None
 
+    def refresh_table(self, dados_tabela: list):
+        """Atualiza os dados da tabela na janela principal."""
+        self.__window['-TABELA-'].update(values=dados_tabela)
+
     @staticmethod
     def show_message(titulo: str, mensagem: str):
+        """Exibe uma mensagem de pop-up simples."""
         sg.Popup(titulo, mensagem)
 
     @staticmethod
     def show_confirm_message(titulo: str, mensagem: str):
+        """Exibe um pop-up de confirmação (Sim/Não) e retorna a escolha."""
         return sg.popup_yes_no(mensagem, title=titulo)
-
-    def refresh_table(self, categorias_lista):
-        dados_tabela = TelaCategoria._preparar_dados_tabela(categorias_lista)
-        self.__window['-TABELA-'].update(values=dados_tabela)

@@ -1,13 +1,12 @@
 from collections import Counter
 from Entidades.Voto import Voto
-from Entidades.PessoaAbstract import PessoaAbstract
-from Entidades.Categoria import Categoria
-from Excecoes.OpcaoInvalida import OpcaoInvalida
 from Limites.TelaVotacao import TelaVotacao
 from DAOs.VotoDao import VotoDAO
 
 
 class ControladorVotacao:
+    """Controlador principal para as regras de negócio de Votação."""
+
     def __init__(self, controlador_sistema, controlador_membros, controlador_categorias,
                  controlador_filmes, controlador_indicacao):
         self.__controlador_sistema = controlador_sistema
@@ -18,141 +17,89 @@ class ControladorVotacao:
         self.__controlador_indicacao = controlador_indicacao
         self.__dao = VotoDAO()
 
-    @staticmethod
-    def _preparar_dados_para_selecao(lista_entidades: list) -> list[dict]:
-        """Converte listas de entidades (Categoria, Pessoa, etc.) em um formato para a tela."""
-        dados_para_tela = []
-        for item in lista_entidades:
-            # Se o item for qualquer classe filha de PessoaAbstract (Ator, Diretor...)...
-            if isinstance(item, PessoaAbstract):
-                # Usamos o metodo do próprio objeto para se descrever!
-                info = item.get_info_str()
-                dados_para_tela.append({"id": item.id, "info": info})
-            elif isinstance(item, Categoria):
-                info = f"ID: {item.id} - Nome: {item.nome}"
-                dados_para_tela.append({"id": item.id, "info": info})
-        return dados_para_tela
-    def abrir_menu_votacao(self):
-        """Exibe o menu de votação e processa a escolha do usuário."""
+    def abre_tela(self):
+        """Abre a tela principal e gerencia o loop de eventos."""
+        self.__tela_votacao.init_components()
         while True:
-            try:
-                opcao = self.__tela_votacao.mostra_opcoes_votacao()
-                if opcao == 1:
-                    self.iniciar_votacao()
-                elif opcao == 2:
-                    self.mostrar_resultados()
-                elif opcao == 0:
-                    break
-            except OpcaoInvalida as e:
-                self.__tela_votacao.mostra_mensagem(f"❌ {e}")
-                self.__tela_votacao.espera_input()
-            except Exception as e:
-                self.__tela_votacao.mostra_mensagem(f"❌ Erro inesperado: {e}")
-                self.__tela_votacao.espera_input()
+            event, values = self.__tela_votacao.open()
+            if event in (None, '-VOLTAR-'):
+                break
+            if event == '-REGISTRAR-':
+                self.iniciar_votacao_gui()
+            elif event == '-RESULTADOS-':
+                self.mostrar_resultados_gui()
+        self.__tela_votacao.close()
 
-    def iniciar_votacao(self):
-        """Conduz o processo de registro de um novo voto."""
+    def iniciar_votacao_gui(self):
+        """Orquestra o fluxo completo de registro de um novo voto."""
         if self.__controlador_sistema.fase_atual_premiacao != self.__controlador_sistema.FASE_VOTACAO_ABERTA:
-            msg = ("\n❌ A votação não está disponível nesta fase da premiação."
-                   if self.__controlador_sistema.fase_atual_premiacao != self.__controlador_sistema.FASE_INDICACOES_ABERTAS
-                   else "\n❌ A votação ainda não pode começar. O período de indicações precisa ser encerrado primeiro.")
-            self.__tela_votacao.mostra_mensagem(msg)
-            self.__tela_votacao.espera_input()
+            self.__tela_votacao.show_message("Aviso", "A votação não está disponível nesta fase da premiação.")
             return
-        
-        self.__tela_votacao.mostra_mensagem("\n--- Iniciar Votação ---")
 
+        # --- PASSO 1: Selecionar Votante e Categoria ---
         membros = self.__controlador_membros.membros
-        if not membros:
-            self.__tela_votacao.mostra_mensagem("❌ Nenhum membro da academia cadastrado para votar.")
-            self.__tela_votacao.espera_input()
-            return
-
-        membros_dados = self._preparar_dados_para_selecao(membros)
-        membro_votante_dict = self.__tela_votacao.seleciona_membro_votante(membros_dados)
-        if not membro_votante_dict:
-            self.__tela_votacao.espera_input()
-            return
-        membro_id_votante = membro_votante_dict.get("id")
-        membro_obj = self.__controlador_membros.buscar_por_id(membro_id_votante)
-        funcao_votante = membro_obj.funcao if membro_obj else ""
-
         categorias = self.__controlador_categorias.entidades
-        if not categorias:
-            self.__tela_votacao.mostra_mensagem("❌ Nenhuma categoria cadastrada para votação.")
-            self.__tela_votacao.espera_input()
+        if not membros or not categorias:
+            self.__tela_votacao.show_message("Aviso", "É preciso ter Membros e Categorias cadastrados.")
             return
 
-        categorias_dados = self._preparar_dados_para_selecao(categorias)
-        categoria_escolhida_dados = self.__tela_votacao.seleciona_categoria_para_voto(categorias_dados)
-        if not categoria_escolhida_dados:
-            self.__tela_votacao.espera_input()
-            return
-        categoria_obj = self.__controlador_categorias.buscar_categoria_por_id(categoria_escolhida_dados.get('id'))
+        mapa_membros = {f"ID {m.id}: {m.nome}": m for m in membros}
+        mapa_categorias = {f"ID {cat.id}: {cat.nome}": cat for cat in categorias}
 
-        if categoria_obj.tipo_indicacao == "diretor" and funcao_votante != "diretor":
-            self.__tela_votacao.mostra_mensagem(
-                f"❌ Apenas membros 'Diretores' podem votar na categoria '{categoria_obj.nome}'."
-            )
-            self.__tela_votacao.espera_input()
+        dados_passo1 = self.__tela_votacao.pega_dados_votacao_passo1(mapa_membros, mapa_categorias)
+        if not dados_passo1 or not dados_passo1.get('-MEMBRO-') or not dados_passo1.get('-CATEGORIA-'):
             return
 
+        # O Controlador processa os dados brutos da tela
+        membro_obj = mapa_membros[dados_passo1['-MEMBRO-'][0]]
+        categoria_obj = mapa_categorias[dados_passo1['-CATEGORIA-'][0]]
+
+        # O Controlador faz a validação da regra de negócio
         for voto in self.__dao.get_all():
-            if voto.membro_id == membro_id_votante and voto.categoria.id == categoria_obj.id:
-                self.__tela_votacao.mostra_mensagem(
-                    f"⚠️ O membro ID {membro_id_votante} já votou na categoria '{categoria_obj.nome}'."
-                )
-                self.__tela_votacao.espera_input()
+            if voto.membro_id == membro_obj.id and voto.categoria.id == categoria_obj.id:
+                msg = f"O membro '{membro_obj.nome}' já votou na categoria '{categoria_obj.nome}'."
+                self.__tela_votacao.show_message("Erro de Votação", msg)
                 return
-        
-        finalistas = self.__controlador_indicacao.get_finalistas_por_categoria(categoria_obj.id, limite=5)
+
+        # --- PASSO 2: Selecionar o Finalista ---
+        finalistas = self.__controlador_indicacao.get_finalistas_por_categoria(categoria_obj.id)
         if not finalistas:
-            self.__tela_votacao.mostra_mensagem(
-                f"❌ Não há finalistas para a categoria '{categoria_obj.nome}'."
-            )
-            self.__tela_votacao.espera_input()
+            self.__tela_votacao.show_message("Aviso", f"Não há finalistas para a categoria '{categoria_obj.nome}'.")
             return
 
-        indicado_escolhido = self.__tela_votacao.seleciona_indicado_para_voto(finalistas, categoria_obj.nome)
-        if not indicado_escolhido:
-            self.__tela_votacao.espera_input()
-            return
-            
-        id_item_votado = indicado_escolhido.get("id_original_indicado")
-        tipo_item_votado = indicado_escolhido.get("tipo_original_indicado")
-
-        #Lógica de geração de ID segura e moderna.
-        all_ids = [voto.id_voto for voto in self.__dao.get_all()]
-        proximo_id = max(all_ids) + 1 if all_ids else 1
-
-        novo_voto = Voto(id_voto=proximo_id,
-                          membro_id=membro_id_votante,
-                          categoria=categoria_obj,
-                          item_indicado_id=id_item_votado,
-                          tipo_item_indicado=tipo_item_votado)
-
-        self.__dao.add(proximo_id, novo_voto)
-        self.__tela_votacao.mostra_mensagem(
-            f"✅ Voto para '{indicado_escolhido.get('nome_display')}' registrado com sucesso!"
-        )
-        self.__tela_votacao.espera_input()
-
-    def mostrar_resultados(self):
-        """Calcula e delega a exibição dos resultados da votação para a tela."""
-        if not self.__dao.get_all():
-            self.__tela_votacao.mostra_mensagem("📭 Nenhum voto registrado ainda.")
-            self.__tela_votacao.espera_input()
+        mapa_finalistas = {f['nome_display']: f for f in finalistas}
+        dados_passo2 = self.__tela_votacao.pega_dados_votacao_passo2(mapa_finalistas, categoria_obj.nome)
+        if not dados_passo2 or not dados_passo2.get('-FINALISTA-'):
             return
 
+        # Controlador processa a seleção final e salva o objeto
+        finalista_selecionado = mapa_finalistas[dados_passo2['-FINALISTA-'][0]]
+
+        novo_id = self.__dao.get_next_id()
+        novo_voto = Voto(id_voto=novo_id,
+                         membro_id=membro_obj.id,
+                         categoria=categoria_obj,
+                         item_indicado_id=finalista_selecionado.get("id_original_indicado"),
+                         tipo_item_indicado=finalista_selecionado.get("tipo_original_indicado"))
+
+        self.__dao.add(key=novo_id, voto=novo_voto)
+        self.__tela_votacao.show_message("Sucesso",
+                                         f"Voto para '{finalista_selecionado.get('nome_display')}' registrado!")
+
+    def mostrar_resultados_gui(self):
+        """Busca os votos, calcula os resultados e pede para a tela exibir."""
+        todos_os_votos = self.__dao.get_all()
+        if not todos_os_votos:
+            self.__tela_votacao.mostra_resultados(None)
+            return
+
+        # O Controlador faz toda a lógica de contagem e formatação
         resultados = {}
-        for voto in self.__dao.get_all():
+        for voto in todos_os_votos:
             cat_id = voto.categoria.id
             if cat_id not in resultados:
-                resultados[cat_id] = {
-                    "nome_categoria": voto.categoria.nome,
-                    "contagem_votos": Counter()
-                }
-            
+                resultados[cat_id] = {"nome_categoria": voto.categoria.nome, "contagem_votos": Counter()}
+
             nome_item = "Item Desconhecido"
             if voto.tipo_item_indicado == "filme":
                 filme = self.__controlador_filmes.buscar_filme_por_id(voto.item_indicado_id)
@@ -160,16 +107,16 @@ class ControladorVotacao:
             elif voto.tipo_item_indicado in ["ator", "diretor"]:
                 membro = self.__controlador_membros.buscar_por_id(voto.item_indicado_id)
                 if membro: nome_item = membro.nome
-            
-            resultados[cat_id]["contagem_votos"][f"{nome_item} (ID: {voto.item_indicado_id})"] += 1
 
-        resultados_formatados = {
-            dados["nome_categoria"]: sorted(dados["contagem_votos"].items(),
-                                            key=lambda item: item[1],
-                                            reverse=True)
-            for _, dados in resultados.items()
-        }
-        
-        self.__tela_votacao.mostra_resultados(resultados_formatados)
-        self.__tela_votacao.espera_input()
-        
+            resultados[cat_id]["contagem_votos"][nome_item] += 1
+
+        # Formata o texto final para a tela "burra" apenas exibir
+        texto_final = ""
+        for dados in resultados.values():
+            texto_final += f"🏆 Categoria: {dados['nome_categoria']}\n" + "-" * 40 + "\n"
+            votos_ordenados = sorted(dados["contagem_votos"].items(), key=lambda item: item[1], reverse=True)
+            for item_nome, contagem in votos_ordenados:
+                texto_final += f"   - {item_nome}: {contagem} voto(s)\n"
+            texto_final += "\n"
+
+        self.__tela_votacao.mostra_resultados(texto_final)

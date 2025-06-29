@@ -1,76 +1,71 @@
-from Utils.validadores import le_num_inteiro
+import PySimpleGUI as sg
 
 class TelaVotacao:
+    """Responsável pela interface gráfica do gerenciamento de Votação."""
+    def __init__(self):
+        self.__window = None
+        sg.theme('DarkAmber')
 
-    def mostra_mensagem(self, msg: str):
-        print(msg)
+    def init_components(self):
+        """Prepara a janela principal com as opções de votação."""
+        layout = [
+            [sg.Text('Menu de Votação', font=('Helvetica', 25), justification='center', expand_x=True, pad=(0,10))],
+            [sg.Button('Registrar Novo Voto', key='-REGISTRAR-', size=(30,2), pad=(0,10))],
+            [sg.Button('Ver Resultados da Votação', key='-RESULTADOS-', size=(30,2))],
+            [sg.Push(), sg.Button('Voltar', key='-VOLTAR-'), sg.Push()]
+        ]
+        self.__window = sg.Window('Votação', layout, element_justification='center')
 
-    def espera_input(self, msg: str = "🔁 Pressione Enter para continuar..."):
-        """Exibe uma mensagem e aguarda o input do usuário para pausar."""
-        input(msg)
+    def pega_dados_votacao_passo1(self, membros_map: dict, categorias_map: dict):
+        """Abre o formulário do Passo 1: selecionar Votante e Categoria."""
+        layout_form = [
+            [sg.Text('Passo 1: Selecione o Votante e a Categoria', font=('Helvetica', 15))],
+            [sg.Text('Membro Votante:')],
+            [sg.Listbox(values=list(membros_map.keys()), size=(60, 5), key='-MEMBRO-', expand_x=True)],
+            [sg.Text('Categoria:')],
+            [sg.Listbox(values=list(categorias_map.keys()), size=(60, 5), key='-CATEGORIA-', expand_x=True)],
+            [sg.Submit('Próximo'), sg.Cancel('Cancelar')]
+        ]
+        form_window = sg.Window("Registrar Novo Voto - Passo 1", layout_form, modal=True)
+        event, values = form_window.read()
+        form_window.close()
+        if event == 'Próximo':
+            return values
+        return None
 
-    def mostra_opcoes_votacao(self) -> int:
-        self.mostra_mensagem("\n----- VOTAÇÃO -----")
-        self.mostra_mensagem("1 - Registrar Novo Voto")
-        self.mostra_mensagem("2 - Ver Resultados da Votação")
-        self.mostra_mensagem("0 - Voltar ao Menu Principal")
-        return le_num_inteiro("Escolha a opção: ", min_val=0, max_val=2)
+    def pega_dados_votacao_passo2(self, finalistas_map: dict, nome_categoria: str):
+        """Abre o formulário do Passo 2: selecionar o finalista."""
+        layout_finalistas = [
+            [sg.Text(f'Categoria: {nome_categoria}', font=('Helvetica', 12), justification='center', expand_x=True)],
+            [sg.Text('Passo 2: Selecione seu Voto', font=('Helvetica', 15))],
+            [sg.Listbox(values=list(finalistas_map.keys()), size=(50, 10), key='-FINALISTA-', expand_x=True)],
+            [sg.Submit('Salvar Voto'), sg.Cancel('Cancelar')]
+        ]
+        form_window = sg.Window("Registrar Novo Voto - Passo 2", layout_finalistas, modal=True)
+        event, values = form_window.read()
+        form_window.close()
+        if event == 'Salvar Voto':
+            return values
+        return None
 
-    def _selecionar_item_da_lista(self, lista_dados: list[dict], titulo_selecao: str) -> dict | None:
-        if not lista_dados:
-            self.mostra_mensagem(f"Nenhum(a) {titulo_selecao} disponível para seleção.")
-            return None
-        
-        self.mostra_mensagem(f"\n--- Selecionar {titulo_selecao} ---")
-        for i, item in enumerate(lista_dados):
-            self.mostra_mensagem(f"{i + 1}. {item.get('info', 'Dados indisponíveis')}")
-            
-        prompt = (f"Escolha o número do(a) {titulo_selecao.lower()} (1-{len(lista_dados)}) "
-                  "ou 0 para cancelar: ")
-        escolha_num = le_num_inteiro(prompt, min_val=0, max_val=len(lista_dados))
-        
-        if escolha_num is None or escolha_num == 0:
-            self.mostra_mensagem("Seleção cancelada.")
-            return None
-        
-        return lista_dados[escolha_num - 1]
+    def mostra_resultados(self, texto_resultados: str):
+        """Exibe os resultados da votação em uma janela com scroll."""
+        if not texto_resultados:
+            texto_resultados = "Nenhum voto registrado para exibir."
+        sg.PopupScrolled(texto_resultados, title="Resultados da Votação", size=(80, 25))
 
-    def seleciona_membro_votante(self, membros_dados: list[dict]) -> dict | None:
-        return self._selecionar_item_da_lista(membros_dados, "Membro Votante")
+    def open(self):
+        """Lê um evento da janela principal de votação."""
+        event, values = self.__window.read()
+        return event, values
 
-    def seleciona_categoria_para_voto(self, categorias_dados: list[dict]) -> dict | None:
-        return self._selecionar_item_da_lista(categorias_dados, "Categoria para Votar")
+    def close(self):
+        """Fecha a janela principal de votação."""
+        if self.__window:
+            self.__window.close()
+        self.__window = None
 
-    def seleciona_indicado_para_voto(self, indicados_dados: list, nome_categoria: str) -> dict | None:
-        if not indicados_dados:
-            self.mostra_mensagem(f"Nenhum indicado disponível na categoria '{nome_categoria}'.")
-            return None
-
-        self.mostra_mensagem(f"\n--- Votar em Finalistas para '{nome_categoria}' ---")
-        for i, indicado in enumerate(indicados_dados):
-            self.mostra_mensagem(f"{i + 1}. {indicado.get('nome_display', 'Item Desconhecido')}")
-        
-        prompt = (f"Escolha o número do seu voto (1-{len(indicados_dados)}) "
-                  "ou 0 para cancelar: ")
-        escolha = le_num_inteiro(prompt, min_val=0, max_val=len(indicados_dados))
-        
-        if escolha is None or escolha == 0:
-            self.mostra_mensagem("Votação cancelada.")
-            return None
-            
-        return indicados_dados[escolha - 1]
-
-    def mostra_resultados(self, resultados_formatados: dict):
-        self.mostra_mensagem("\n--- Resultados da Votação ---")
-        if not resultados_formatados:
-            self.mostra_mensagem("Nenhuma contagem de votos para exibir.")
-            return
-
-        for nome_categoria, votos_ordenados in resultados_formatados.items():
-            self.mostra_mensagem(f"\n🏆 Categoria: {nome_categoria}")
-            if not votos_ordenados:
-                self.mostra_mensagem("   Nenhum voto nesta categoria.")
-                continue
-            
-            for item_nome, contagem in votos_ordenados:
-                self.mostra_mensagem(f"   - {item_nome}: {contagem} voto(s)")
+    @staticmethod
+    def show_message(titulo: str, mensagem: str):
+        """Exibe uma mensagem de pop-up simples."""
+        sg.Popup(titulo, mensagem)

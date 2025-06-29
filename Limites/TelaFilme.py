@@ -1,18 +1,18 @@
+# Em Limites/TelaFilme.py
 import PySimpleGUI as sg
 
 class TelaFilmes:
+    """Responsável pela interface gráfica do gerenciamento de Filmes."""
     def __init__(self):
         self.__window = None
-
-
-    def init_components_lista(self,  dados_prontos_da_tabela: list):
         sg.theme('DarkAmber')
-        
-        headings = ['ID', 'Título', 'Ano', 'Nacionalidade', 'Diretor']
 
+    def init_components_lista(self, dados_tabela: list):
+        """Prepara a janela principal com a lista de filmes."""
+        headings = ['ID', 'Título', 'Ano', 'Nacionalidade', 'Diretor']
         layout = [
-            [sg.Text('Gerenciador de Filmes', font=('Helvetica', 25))],
-            [sg.Table(values=dados_prontos_da_tabela, headings=headings, max_col_width=35,
+            [sg.Text('Gerenciador de Filmes', font=('Helvetica', 25), justification='center', expand_x=True, pad=(0,10))],
+            [sg.Table(values=dados_tabela, headings=headings, max_col_width=35,
                       auto_size_columns=True, justification='left', num_rows=10,
                       key='-TABELA-', row_height=25, enable_events=True)],
             [
@@ -20,95 +20,54 @@ class TelaFilmes:
                 sg.Button('Editar', key='-EDITAR-'),
                 sg.Button('Excluir', key='-EXCLUIR-'),
                 sg.Button('Agrupar por Nacionalidade', key='-AGRUPAR-'),
+                sg.Push(),
                 sg.Button('Voltar', key='-VOLTAR-')
             ]
         ]
-
         self.__window = sg.Window('Filmes', layout, finalize=True)
 
-    def pega_dados_filme(self, diretores_lista, dados_atuais: dict = None):
-        is_edicao = bool(dados_atuais)
-        titulo_janela = "Editar Filme" if is_edicao else "Adicionar Novo Filme"
-        
-        titulo_default = dados_atuais.get('titulo', '')
-        ano_default = dados_atuais.get('ano', '')
-        nac_default = dados_atuais.get('nacionalidade_str', '')
-        
-        diretor_selecionado_default = None
-        if is_edicao and dados_atuais.get('diretor_id'):
-            for diretor in diretores_lista:
-                if diretor.id == dados_atuais['diretor_id']:
-                    diretor_selecionado_default = f"ID: {diretor.id} - {diretor.nome}"
-                    break
-        
-        mapa_diretores_display = [f"ID: {d.id} - {d.nome}" for d in diretores_lista]
-
+    def pega_dados_filme(self, diretores_para_combobox: list, dados_iniciais: dict):
+        """Abre um formulário para Adicionar ou Editar um filme e retorna os dados brutos."""
+        titulo_janela = dados_iniciais.get('titulo_janela', "Novo Filme")
         layout_form = [
-            [sg.Text('Título:', size=(15,1)), sg.Input(default_text=titulo_default, key='-TITULO-')],
-            [sg.Text('Ano:', size=(15,1)), sg.Input(default_text=ano_default, key='-ANO-')],
-            [sg.Text('Nacionalidade:', size=(15,1)), sg.Input(default_text=nac_default, key='-NACIONALIDADE-')],
-            [sg.Text('Diretor:', size=(15,1)), sg.Combo(mapa_diretores_display, default_value=diretor_selecionado_default, readonly=True, key='-DIRETOR-', expand_x=True)],
+            [sg.Text('Título:', size=(15,1)), sg.Input(default_text=dados_iniciais.get('titulo', ''), key='-TITULO-', expand_x=True)],
+            [sg.Text('Ano:', size=(15,1)), sg.Input(default_text=dados_iniciais.get('ano', ''), key='-ANO-', expand_x=True)],
+            [sg.Text('Nacionalidade:', size=(15,1)), sg.Input(default_text=dados_iniciais.get('nacionalidade_str', ''), key='-NACIONALIDADE-', expand_x=True)],
+            [sg.Text('Diretor:', size=(15,1)), sg.Combo(diretores_para_combobox, default_value=dados_iniciais.get('diretor_str', ''), readonly=True, key='-DIRETOR-', expand_x=True)],
             [sg.Submit('Salvar'), sg.Cancel('Cancelar')]
         ]
+        form_window = sg.Window(titulo_janela, layout_form, finalize=True, modal=True)
+        event, values = form_window.read()
+        form_window.close()
+        if event == 'Salvar':
+            return values
+        return None
 
-        form_window = sg.Window(titulo_janela, layout_form, finalize=True)
-        while True:
-            event, values = form_window.read()
-            if event in (sg.WIN_CLOSED, 'Cancelar'):
-                form_window.close()
-                return None
-
-            if event == 'Salvar':
-                erros = []
-                if not values['-TITULO-'].strip():
-                    erros.append("O campo 'Título' é obrigatório.")
-                if not values['-NACIONALIDADE-'].strip():
-                    erros.append("O campo 'Nacionalidade' é obrigatório.")
-                if not values['-DIRETOR-']:
-                    erros.append("A seleção de um 'Diretor' é obrigatória.")
-
-                try:
-                    int(values['-ANO-'])  # Apenas checa se é um número, a validação de range fica no controlador
-                except (ValueError, TypeError):
-                    erros.append("O 'Ano' deve ser um número inteiro válido.")
-
-                if erros:
-                    self.show_message("Erros de Validação", "\n".join(erros))
-                    continue
-
-                # Se passou, extrai o ID do diretor e retorna
-                id_diretor_str = values['-DIRETOR-'].split(' ')[1]
-                values['-DIRETOR_ID-'] = int(id_diretor_str)
-                values['-ANO-'] = int(values['-ANO-'])
-                form_window.close()
-                return values
-
-    def mostra_filmes_agrupados(self, filmes_agrupados: dict):
-        texto_final = ""
-        for pais, lista_filmes in filmes_agrupados.items():
-            texto_final += f"🌍 Nacionalidade: {pais}\n" + "-"*30 + "\n"
-            for filme_info in lista_filmes:
-                texto_final += f"  ID: {filme_info['id']}. 🎬 {filme_info['titulo']} ({filme_info['ano']}) (Dir: {filme_info['diretor']})\n"
-            texto_final += "\n"
-        
-        self.show_message("Filmes Agrupados por Nacionalidade", texto_final)
+    def mostra_filmes_agrupados(self, texto_formatado: str):
+        """Exibe uma janela com o texto dos filmes agrupados."""
+        sg.PopupScrolled(texto_formatado, title="Filmes Agrupados por Nacionalidade", size=(80, 20))
 
     def open_lista(self):
+        """Lê um evento da janela principal de listagem."""
         event, values = self.__window.read()
         return event, values
 
     def close_lista(self):
+        """Fecha a janela principal de listagem."""
         if self.__window:
             self.__window.close()
-        self.__window = None
+            self.__window = None
+
+    def refresh_table(self, dados_tabela: list):
+        """Atualiza os dados da tabela na janela principal."""
+        self.__window['-TABELA-'].update(values=dados_tabela)
 
     @staticmethod
     def show_message(titulo: str, mensagem: str):
-        sg.Popup(titulo, mensagem, grab_anywhere=True)
+        """Exibe uma mensagem de pop-up simples."""
+        sg.Popup(titulo, mensagem)
 
     @staticmethod
     def show_confirm_message(titulo: str, mensagem: str):
+        """Exibe um pop-up de confirmação (Sim/Não) e retorna a escolha."""
         return sg.popup_yes_no(mensagem, title=titulo)
-
-    def refresh_table(self, dados_prontos_da_tabela: list):
-        self.__window['-TABELA-'].update(values=dados_prontos_da_tabela)

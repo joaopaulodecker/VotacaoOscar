@@ -1,46 +1,57 @@
 import PySimpleGUI as sg
 
 class TelaSistema:
+    """Responsável pela interface gráfica do menu principal do sistema."""
     def __init__(self):
         self.__window = None
-
-    def init_components(self, fase_atual_str: str):
         sg.theme('DarkAmber')
 
-        layout = [
-            [sg.Text('Sistema de Premiação Oscar', font=('Helvetica', 25), justification='center', expand_x=True)],
-            [sg.Text(f"Fase Atual: {fase_atual_str}", key='-FASE-', font=('Helvetica', 12), justification='center', expand_x=True)],
-            [sg.HorizontalSeparator()],
-            [sg.Button('Gerenciar Pessoas', key='1', size=(25,2)), sg.Button('Listar Atores', key='2', size=(25,2))],
-            [sg.Button('Gerenciar Filmes', key='4', size=(25,2)), sg.Button('Listar Diretores', key='3', size=(25,2))],
-            [sg.Button('Gerenciar Categorias', key='5', size=(25,2)), sg.Button('Gerenciar Indicações', key='6', size=(25,2))],
-            [sg.Button('Gerenciar Votação', key='7', size=(25,2)), sg.Button('Ver Resultados', key='8', size=(25,2))],
-            [sg.HorizontalSeparator()],
-            [sg.Button('Encerrar Indicações / Abrir Votação', key='9', expand_x=True, button_color=('white', 'green'))],
-            [sg.Button('Sair do Sistema', key='0', expand_x=True, button_color=('white', 'red'))]
+    def init_components(self, fase_premiacao: str):
+        """Prepara a janela principal do sistema."""
+        # Layout organizado em colunas para melhor alinhamento
+        coluna_cadastros = [
+            [sg.Button('Gerenciar Pessoas', key='-MEMBROS-', size=(25, 2))],
+            [sg.Button('Gerenciar Filmes', key='-FILMES-', size=(25, 2))],
+            [sg.Button('Gerenciar Categorias', key='-CATEGORIAS-', size=(25, 2))],
         ]
-        
-        self.__window = sg.Window(
-            'Menu Principal - Oscar',
-            layout,
-            finalize=True,
-            element_justification='center'
-        )
+        coluna_processos = [
+            [sg.Button('Registrar Indicações', key='-INDICACOES-', size=(25, 2))],
+            [sg.Button('Registrar Votos', key='-VOTACAO-', size=(25, 2))],
+            [sg.Button('Ver Resultados Finais', key='-RESULTADOS-', size=(25, 2))],
+        ]
+
+        layout = [
+            [sg.Text('Sistema de Premiação Oscar', font=('Helvetica', 25), justification='center', expand_x=True, pad=(0,10))],
+            [sg.Text(f"Fase Atual: {fase_premiacao}", key='-FASE-', font=('Helvetica', 12), justification='center', expand_x=True, pad=(0,10))],
+            [sg.HorizontalSeparator(pad=(0,15))],
+            [
+                sg.Column(coluna_cadastros, element_justification='c'),
+                sg.VSeparator(),
+                sg.Column(coluna_processos, element_justification='c')
+            ],
+            [sg.HorizontalSeparator(pad=(0,15))],
+            [
+                sg.Button('Avançar Fase (Encerrar Indicações)', key='-AVANCAR_FASE-', pad=(5,15)),
+                sg.Push(),
+                sg.Button('Sair', key='-SAIR-', pad=(5,15))
+            ]
+        ]
+        self.__window = sg.Window('Sistema Oscar', layout)
 
     def open(self):
+        """Lê um evento da janela principal do sistema."""
         event, values = self.__window.read()
-        if event == sg.WIN_CLOSED:
-            return '0', values
         return event, values
 
     def close(self):
-        if self.__window:
-            self.__window.close()
-        self.__window = None
-    
-    def update_fase(self, nova_fase_str: str):
-        if self.__window:
-            self.__window['-FASE-'].update(f"Fase Atual: {nova_fase_str}")
+        """Fecha a janela principal do sistema."""
+        self.__window.close()
 
-    def show_message(self, titulo: str, mensagem: str):
+    def update_fase(self, nova_fase: str):
+        """Atualiza o texto da fase na janela."""
+        self.__window['-FASE-'].update(f"Fase Atual: {nova_fase}")
+
+    @staticmethod
+    def show_message(titulo: str, mensagem: str):
+        """Exibe uma mensagem de pop-up simples."""
         sg.Popup(titulo, mensagem)

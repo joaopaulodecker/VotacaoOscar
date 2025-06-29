@@ -5,15 +5,19 @@ from Controladores.ControladorIndicacao import ControladorIndicacao
 from Controladores.ControladorVotacao import ControladorVotacao
 from Controladores.ControladorCategoria import ControladorCategorias
 
+
 class ControladorSistema:
-    FASE_INDICACOES_ABERTAS = "FASE_INDICACOES_ABERTAS"
-    FASE_VOTACAO_ABERTA = "FASE_VOTACAO_ABERTA"
-    FASE_PREMIACAO_CONCLUIDA = "FASE_PREMIACAO_CONCLUIDA"
+    """Controlador principal que orquestra todo o sistema."""
+    # Constantes para as fases, evitando erros de digitação
+    FASE_INDICACOES_ABERTAS = "INDICAÇÕES ABERTAS"
+    FASE_VOTACAO_ABERTA = "VOTAÇÃO ABERTA"
+    FASE_PREMIACAO_CONCLUIDA = "PREMIAÇÃO CONCLUÍDA"
 
     def __init__(self):
         self.__tela_sistema = TelaSistema()
-        self.__fase_atual_premiacao = ControladorSistema.FASE_INDICACOES_ABERTAS
+        self.__fase_atual_premiacao = self.FASE_INDICACOES_ABERTAS
 
+        # Inicializa todos os outros controladores
         self.__controlador_membros = ControladorMembros(self)
         self.__controlador_categorias = ControladorCategorias()
         self.__controlador_filmes = ControladorFilmes(self)
@@ -30,71 +34,48 @@ class ControladorSistema:
         return self.__controlador_membros
 
     @property
-    def controlador_categorias(self):
-        return self.__controlador_categorias
-
-    @property
-    def controlador_filmes(self):
-        return self.__controlador_filmes
-
-    @property
-    def controlador_indicacao(self):
-        return self.__controlador_indicacao
-
-    @property
-    def controlador_votacao(self):
-        return self.__controlador_votacao
-        
-    @property
     def fase_atual_premiacao(self) -> str:
         return self.__fase_atual_premiacao
 
     def encerrar_indicacoes_abrir_votacao(self):
-        if self.__fase_atual_premiacao == ControladorSistema.FASE_INDICACOES_ABERTAS:
-            self.__fase_atual_premiacao = ControladorSistema.FASE_VOTACAO_ABERTA
+        """Altera a fase da premiação de Indicações para Votação."""
+        if self.__fase_atual_premiacao == self.FASE_INDICACOES_ABERTAS:
+            self.__fase_atual_premiacao = self.FASE_VOTACAO_ABERTA
             self.__tela_sistema.show_message("Fase Alterada", "✅ Período de indicações encerrado. Votação liberada!")
-        elif self.__fase_atual_premiacao == ControladorSistema.FASE_VOTACAO_ABERTA:
+        elif self.__fase_atual_premiacao == self.FASE_VOTACAO_ABERTA:
             self.__tela_sistema.show_message("Aviso", "ℹ️ A votação já está aberta.")
         else:
             self.__tela_sistema.show_message("Aviso", "ℹ️ A premiação já foi concluída.")
 
-    def _listar_membros_por_funcao(self, funcao: str, titulo: str):
-        membros_encontrados = self.__controlador_membros.buscar_por_funcao_e_genero(funcao)
-        lista_formatada = [f"ID: {m.id} | Nome: {m.nome}" for m in membros_encontrados]
-        
-        texto_lista = "\n".join(lista_formatada) if lista_formatada else "(Nenhum item encontrado)"
-        
-        self.__tela_sistema.show_message(titulo, texto_lista)
-
     def inicializa_sistema(self):
-        fase_formatada = self.fase_atual_premiacao.replace('_', ' ').title()
-        self.__tela_sistema.init_components(fase_formatada)
+        """Metodo principal que abre o menu e gerencia o loop de eventos."""
+        self.__tela_sistema.init_components(self.fase_atual_premiacao)
+
+        menu_opcoes = {
+            '-MEMBROS-': self.__controlador_membros.abre_tela,
+            '-FILMES-': self.__controlador_filmes.abre_tela,
+            '-CATEGORIAS-': self.__controlador_categorias.abre_tela,
+            '-INDICACOES-': self.__controlador_indicacao.abre_tela,
+            '-VOTACAO-': self.__controlador_votacao.abre_tela,
+            # --- CORREÇÃO APLICADA AQUI ---
+            # O botão de resultados agora chama o metodo correto do controlador de votação.
+            '-RESULTADOS-': self.__controlador_votacao.mostrar_resultados_gui,
+        }
 
         while True:
             event, values = self.__tela_sistema.open()
-            
-            if event is None or event == '0':
+
+            if event in (None, '-SAIR-'):
                 break
 
-            if event == '1':
-                self.__controlador_membros.abrir_menu()
-            elif event == '2':
-                self._listar_membros_por_funcao("ator", "🎭 Atores Cadastrados:")
-            elif event == '3':
-                self._listar_membros_por_funcao("diretor", "🎬 Diretores Cadastrados:")
-            elif event == '4':
-                self.__controlador_filmes.abre_tela()
-            elif event == '5':
-                self.__controlador_categorias.abrir_menu()
-            elif event == '6':
-                self.__controlador_indicacao.abrir_menu_indicacoes()
-            elif event == '7':
-                self.__controlador_votacao.abrir_menu_votacao()
-            elif event == '8':
-                self.__controlador_votacao.mostrar_resultados()
-            elif event == '9':
+            # Chama a função correspondente ao botão clicado
+            if event in menu_opcoes:
+                metodo_a_chamar = menu_opcoes[event]
+                metodo_a_chamar()
+
+            elif event == '-AVANCAR_FASE-':
                 self.encerrar_indicacoes_abrir_votacao()
-                nova_fase_formatada = self.fase_atual_premiacao.replace('_', ' ').title()
-                self.__tela_sistema.update_fase(nova_fase_formatada)
+                # Atualiza o texto da fase na tela
+                self.__tela_sistema.update_fase(self.fase_atual_premiacao)
 
         self.__tela_sistema.close()

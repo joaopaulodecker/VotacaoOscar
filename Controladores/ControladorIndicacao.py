@@ -5,7 +5,9 @@ from Entidades.IndFilme import IndFilme
 from Limites.TelaIndicacao import TelaIndicacao
 from DAOs.IndicacaoDao import IndicacaoDAO
 
+
 class ControladorIndicacao:
+    """Controlador principal para as regras de negócio de Indicações."""
 
     def __init__(self, controlador_sistema, controlador_membros,
                  controlador_categorias, controlador_filmes):
@@ -16,89 +18,116 @@ class ControladorIndicacao:
         self.__controlador_filmes = controlador_filmes
         self.__dao = IndicacaoDAO()
 
-    @staticmethod
-    def _criar_objeto_indicacao(id_ind, cat_obj, item_obj_final):
-        """Cria a instância correta da classe de indicação a partir dos dados da tela."""
-        tipo_original = item_obj_final.get('tipo_original_indicado')
-        objeto_completo = item_obj_final.get('objeto_completo')
+    def _preparar_dados_tabela(self):
+        """Busca as indicações e as formata para a tabela da interface."""
+        indicacoes = self.__dao.get_all()
+        # Mapa para buscar nomes de membros sem passar os objetos para a tela
+        mapa_membros = {m.id: m.nome for m in self.__controlador_membros.membros}
+        dados_tabela = []
+        for indicacao in indicacoes:
+            nome_membro = mapa_membros.get(indicacao.membro_id, "ID não encontrado")
+            dados_tabela.append([indicacao.id_indicacao, nome_membro, indicacao.categoria.nome,
+                                 indicacao.obter_detalhes_item_indicado()])
+        return dados_tabela
 
-        if tipo_original == 'filme':
-            return IndFilme(id_indicacao=id_ind, categoria=cat_obj, filme_indicado=objeto_completo)
-        elif tipo_original == 'ator':
-            return IndAtor(id_indicacao=id_ind, categoria=cat_obj, ator_indicado=objeto_completo)
-        elif tipo_original == 'diretor':
-            return IndDiretor(id_indicacao=id_ind, categoria=cat_obj, diretor_indicado=objeto_completo)
-        return None
-
-    def abrir_menu_indicacoes(self):
-        """Abre e gerencia a janela principal de indicações."""
-        self.__tela_indicacao.init_components(self.__dao.get_all())
+    def abre_tela(self):
+        """Abre a tela principal e gerencia o loop de eventos."""
+        dados_tabela = self._preparar_dados_tabela()
+        self.__tela_indicacao.init_components(dados_tabela)
 
         while True:
             event, values = self.__tela_indicacao.open()
-
             if event in (None, '-VOLTAR-'):
                 break
 
             if event == '-ADICIONAR-':
                 self.iniciar_processo_indicacao()
 
-            elif values.get('-TABELA-'):  # .get() é mais seguro
+            elif values.get('-TABELA-'):
                 index_selecionado = values['-TABELA-'][0]
-                indicacao_selecionada = self.__dao.get_all()[index_selecionado]
+                id_indicacao = dados_tabela[index_selecionado][0]
+                indicacao_alvo = self.__dao.get(id_indicacao)
+                if not indicacao_alvo: continue
 
                 if event == '-EXCLUIR-':
-                    self.excluir_indicacao(indicacao_selecionada)
+                    self.excluir_indicacao(indicacao_alvo)
 
             elif event == '-EXCLUIR-':
-                TelaIndicacao.show_message("Aviso", "Por favor, selecione uma indicação na tabela primeiro.")
+                self.__tela_indicacao.show_message("Aviso", "Por favor, selecione uma indicação na tabela primeiro.")
+
+            # Sempre atualiza a tabela para refletir as mudanças
+            dados_tabela = self._preparar_dados_tabela()
+            self.__tela_indicacao.refresh_table(dados_tabela)
 
         self.__tela_indicacao.close()
 
     def iniciar_processo_indicacao(self):
-        """Conduz o fluxo de registrar uma nova indicação com a tela gráfica."""
+        """Orquestra o fluxo de registrar uma nova indicação."""
+        # Validação de fase
         if self.__controlador_sistema.fase_atual_premiacao != self.__controlador_sistema.FASE_INDICACOES_ABERTAS:
-            TelaIndicacao.show_message("Aviso", "O período de indicações já foi encerrado.")
+            self.__tela_indicacao.show_message("Aviso", "O período de indicações já foi encerrado.")
             return
 
-        #1: Pedir a categoria para a tela
+        # --- PASSO 1: Selecionar Indicante e Categoria ---
         categorias = self.__controlador_categorias.entidades
-        dados_da_tela = self.__tela_indicacao.pega_dados_indicacao(categorias)
-
-        if dados_da_tela is None or dados_da_tela.get("acao") != "BUSCAR_FINALISTAS":
+        membros = self.__controlador_membros.membros
+        if not categorias or not membros:
+            self.__tela_indicacao.show_message("Aviso", "É preciso ter Categorias e Membros cadastrados.")
             return
 
-        categoria_obj = dados_da_tela.get("categoria_obj")
+        # O Controlador prepara os dados para a Tela "burra" apenas exibir
+        mapa_categorias = {f"ID {cat.id}: {cat.nome}": cat for cat in categorias}
+        mapa_membros = {f"ID {m.id}: {m.nome}": m for m in membros}
 
-        #2: Buscar finalistas e chamar a segunda parte da tela
-        finalistas = self.get_finalistas_para_indicacao(categoria_obj)
-        if not finalistas:
-            TelaIndicacao.show_message("Aviso",
-                                       f"Não há {categoria_obj.tipo_indicacao}(s) cadastrados para indicar nesta categoria.")
+        dados_passo1 = self.__tela_indicacao.pega_dados_indicacao_passo1(mapa_categorias, mapa_membros)
+        if not dados_passo1 or not dados_passo1.get('-CATEGORIA-') or not dados_passo1.get('-MEMBRO-'):
+            return  # Usuário cancelou ou não selecionou tudo
+
+        # O Controlador processa os dados brutos que a Tela retornou
+        membro_obj = mapa_membros[dados_passo1['-MEMBRO-'][0]]
+        categoria_obj = mapa_categorias[dados_passo1['-CATEGORIA-'][0]]
+
+        # --- PASSO 2: Selecionar o Indicado ---
+        lista_indicaveis = self._get_lista_indicaveis(categoria_obj)
+        if not lista_indicaveis:
+            self.__tela_indicacao.show_message("Aviso",
+                                               f"Não há itens elegíveis para a categoria '{categoria_obj.nome}'.")
             return
 
-        dados_finais = self.__tela_indicacao.preenche_lista_finalistas(finalistas, categoria_obj)
+        mapa_indicaveis = {item['nome_display']: item for item in lista_indicaveis}
+        dados_passo2 = self.__tela_indicacao.pega_dados_indicacao_passo2(mapa_indicaveis, categoria_obj.nome)
+        if not dados_passo2 or not dados_passo2.get('-INDICADO-'):
+            return  # Usuário cancelou ou não selecionou
 
-        if dados_finais and dados_finais.get("acao") == "SALVAR_INDICACAO":
-            item_obj_final = dados_finais.get("indicado_obj")
+        # O Controlador processa a seleção final e salva o objeto
+        item_indicado = mapa_indicaveis[dados_passo2['-INDICADO-'][0]]
 
-            all_ids = [ind.id_indicacao for ind in self.__dao.get_all()]
-            proximo_id = max(all_ids) + 1 if all_ids else 1
+        # O Controlador cria o objeto de indicação correto, passando os argumentos com os nomes corretos
+        novo_id = self.__dao.get_next_id()
+        tipo_indicado = item_indicado['tipo_original_indicado']
+        objeto_indicado = item_indicado['objeto_completo']
+        nova_indicacao = None
 
-            nova_indicacao = self._criar_objeto_indicacao(proximo_id, categoria_obj, item_obj_final)
+        if tipo_indicado == 'filme':
+            nova_indicacao = IndFilme(id_indicacao=novo_id, membro_id=membro_obj.id, categoria=categoria_obj,
+                                      filme_indicado=objeto_indicado)
+        elif tipo_indicado == 'ator':
+            nova_indicacao = IndAtor(id_indicacao=novo_id, membro_id=membro_obj.id, categoria=categoria_obj,
+                                     ator_indicado=objeto_indicado)
+        elif tipo_indicado == 'diretor':
+            nova_indicacao = IndDiretor(id_indicacao=novo_id, membro_id=membro_obj.id, categoria=categoria_obj,
+                                        diretor_indicado=objeto_indicado)
 
-            if nova_indicacao:
-                self.__dao.add(proximo_id, nova_indicacao)
-                TelaIndicacao.show_message("Sucesso", "✅ Indicação registrada com sucesso!")
-                self.__tela_indicacao.refresh_table(self.__dao.get_all())
-            else:
-                TelaIndicacao.show_message("Erro", "Falha ao criar o objeto de indicação.")
+        if nova_indicacao:
+            self.__dao.add(key=novo_id, indicacao=nova_indicacao)
+            self.__tela_indicacao.show_message("Sucesso", "Indicação registrada com sucesso!")
+        else:
+            self.__tela_indicacao.show_message("Erro", "Falha ao criar o objeto de indicação.")
 
-    def get_finalistas_para_indicacao(self, categoria_obj: Categoria) -> list:
+    def _get_lista_indicaveis(self, categoria_obj: Categoria) -> list:
         """Busca a lista de filmes ou membros e formata para a tela de seleção."""
         tipo_item = categoria_obj.tipo_indicacao
-        lista_formatada = []
-        lista_crua = []
+        lista_formatada, lista_crua = [], []
 
         if tipo_item == "filme":
             lista_crua = self.__controlador_filmes.filmes
@@ -110,26 +139,50 @@ class ControladorIndicacao:
 
         for item in lista_crua:
             nome = item.titulo if tipo_item == 'filme' else item.nome
-            lista_formatada.append({
-                "nome_display": nome,
-                "objeto_completo": item,
-                "tipo_original_indicado": tipo_item
-            })
+            lista_formatada.append({"nome_display": nome, "objeto_completo": item, "tipo_original_indicado": tipo_item})
         return lista_formatada
 
     def excluir_indicacao(self, indicacao_alvo):
         """Exclui uma indicação que foi selecionada na tabela."""
         if self.__controlador_sistema.fase_atual_premiacao != self.__controlador_sistema.FASE_INDICACOES_ABERTAS:
-            TelaIndicacao.show_message("Aviso", "Não é possível excluir indicações após o início da votação.")
+            self.__tela_indicacao.show_message("Aviso", "Não é possível excluir indicações após o início da votação.")
             return
 
-        if indicacao_alvo:
-            info = indicacao_alvo.obter_detalhes_item_indicado()
-            confirmado = TelaIndicacao.show_confirm_message(
-                "Confirmar Exclusão",
-                f"Tem certeza que deseja excluir a indicação para '{info}'?"
-            )
-            if confirmado == 'Yes':
-                self.__dao.remove(indicacao_alvo.id_indicacao)
-                TelaIndicacao.show_message("Sucesso", "🗑️ Indicação removida com sucesso!")
-                self.__tela_indicacao.refresh_table(self.__dao.get_all())
+        info = indicacao_alvo.obter_detalhes_item_indicado()
+        confirmado = self.__tela_indicacao.show_confirm_message(
+            "Confirmar Exclusão",
+            f"Tem certeza que deseja excluir a indicação para '{info}'?"
+        )
+        if confirmado == 'Yes':
+            self.__dao.remove(indicacao_alvo.id_indicacao)
+            self.__tela_indicacao.show_message("Sucesso", "Indicação removida com sucesso!")
+
+    def get_finalistas_por_categoria(self, categoria_id: int):
+        """
+        Calcula os 'finalistas' de uma categoria baseado no número de indicações.
+        Este metodo é crucial para a Votação.
+        """
+        from collections import Counter
+
+        contagem = Counter()
+        indicacoes_da_categoria = [ind for ind in self.__dao.get_all() if ind.categoria.id == categoria_id]
+
+        for indicacao in indicacoes_da_categoria:
+            # A chave da contagem é o ID do item indicado (filme, ator, etc.)
+            contagem[indicacao.item_indicado_id] += 1
+
+        # Pega os 5 mais indicados (ou menos, se não houver 5)
+        top_indicados = contagem.most_common(5)
+        finalistas = []
+
+        for id_item, _ in top_indicados:
+            # Encontra a primeira indicação daquele item para pegar os detalhes
+            for indicacao in indicacoes_da_categoria:
+                if indicacao.item_indicado_id == id_item:
+                    finalistas.append({
+                        "nome_display": indicacao.obter_detalhes_item_indicado(),
+                        "id_original_indicado": indicacao.item_indicado_id,
+                        "tipo_original_indicado": indicacao.tipo_indicacao
+                    })
+                    break
+        return finalistas
