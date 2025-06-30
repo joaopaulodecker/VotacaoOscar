@@ -29,7 +29,7 @@ class TelaCategoria:
         titulo_janela = dados_iniciais.get('titulo_janela', "Nova Categoria")
         is_edicao = dados_iniciais.get('is_edicao', False)
 
-        tipos_disponiveis = ['filme', 'ator', 'diretor']
+        tipos_disponiveis = ['filme', 'ator', 'atriz', 'diretor']
 
         layout_form = [
             [sg.Text('Nome da Categoria:', size=(15,1)), sg.Input(default_text=dados_iniciais.get('nome', ''), key='-NOME-', expand_x=True)],

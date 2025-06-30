@@ -3,12 +3,13 @@ from Entidades.Categoria import Categoria
 from Entidades.Diretor import Diretor
 
 class IndDiretor(IndicacaoAbstract):
-    def __init__(self, id_indicacao: int, categoria: Categoria, diretor_indicado: Diretor):
+    def __init__(self, id_indicacao: int, categoria: Categoria, membro_id: int, diretor_indicado: Diretor):
         super().__init__(
             id_indicacao=id_indicacao,
             categoria=categoria,
             item_indicado_id=diretor_indicado.id,
-            tipo_item_indicado="diretor"
+            tipo_item_indicado="diretor",
+            membro_id= membro_id
         )
         self.__item_indicado = diretor_indicado
 

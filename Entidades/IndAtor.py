@@ -3,12 +3,13 @@ from Entidades.Categoria import Categoria
 from Entidades.Ator import Ator
 
 class IndAtor(IndicacaoAbstract):
-    def __init__(self, id_indicacao: int, categoria: Categoria, ator_indicado: Ator):
+    def __init__(self, id_indicacao: int, categoria: Categoria, membro_id: int, ator_indicado: Ator):
         super().__init__(
             id_indicacao=id_indicacao,
             categoria=categoria,
             item_indicado_id=ator_indicado.id,
-            tipo_item_indicado="ator"
+            tipo_item_indicado="ator",
+            membro_id=membro_id
         )
         self.__item_indicado = ator_indicado
         if not isinstance(ator_indicado, Ator):

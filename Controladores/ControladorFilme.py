@@ -2,6 +2,8 @@ from Entidades.Filme import Filme
 from Entidades.Nacionalidade import Nacionalidade
 from Limites.TelaFilme import TelaFilmes
 from DAOs.FilmeDao import FilmeDAO
+from Excecoes.AnoInvalidoException import AnoInvalidoException
+from Excecoes.EntidadeDuplicadaException import EntidadeDuplicadaException
 
 
 class ControladorFilmes:
@@ -38,7 +40,7 @@ class ControladorFilmes:
         return False
 
     def abre_tela(self):
-        """Inicia e gerencia a tela principal do módulo de Filmes."""
+        """Abre a tela principal e gerencia o loop de eventos."""
         dados_tabela = self._preparar_dados_tabela()
         self.__tela_filmes.init_components_lista(dados_tabela)
 
@@ -47,76 +49,88 @@ class ControladorFilmes:
             if event in (None, '-VOLTAR-'):
                 break
 
+            # --- LÓGICA DE EVENTOS ---
             if event == '-ADICIONAR-':
                 self.cadastrar()
             elif event == '-AGRUPAR-':
                 self.listar_filmes_agrupados_por_nacionalidade()
-            elif values.get('-TABELA-'):
-                index_selecionado = values['-TABELA-'][0]
-                id_filme_selecionado = dados_tabela[index_selecionado][0]
-                filme_alvo = self.buscar_filme_por_id(id_filme_selecionado)
-                if not filme_alvo: continue
 
-                if event == '-EDITAR-':
-                    self.alterar(filme_alvo)
-                elif event == '-EXCLUIR-':
-                    self.excluir(filme_alvo)
+            # Primeiro, checa se o evento foi de Editar ou Excluir
             elif event in ('-EDITAR-', '-EXCLUIR-'):
-                self.__tela_filmes.show_message("Aviso", "Por favor, selecione um filme na tabela primeiro.")
+                # SÓ DEPOIS, checa se uma linha da tabela foi selecionada
+                if values.get('-TABELA-'):
+                    index_selecionado = values['-TABELA-'][0]
+                    id_filme_selecionado = dados_tabela[index_selecionado][0]
+                    filme_alvo = self.buscar_filme_por_id(id_filme_selecionado)
+                    if not filme_alvo: continue
 
-            # Sempre atualiza a tabela para o usuário ver as mudanças na hora.
+                    if event == '-EDITAR-':
+                        self.alterar(filme_alvo)
+                    elif event == '-EXCLUIR-':
+                        self.excluir(filme_alvo)
+                else:
+                    # Se não tinha nenhuma linha selecionada, mostra o aviso
+                    self.__tela_filmes.show_message("Aviso", "Por favor, selecione um filme na tabela primeiro.")
+
+            # Após qualquer ação, atualiza a tabela
             dados_tabela = self._preparar_dados_tabela()
             self.__tela_filmes.refresh_table(dados_tabela)
 
         self.__tela_filmes.close_lista()
-
     def cadastrar(self):
-        """Orquestra o processo de cadastro de um novo filme."""
+        """Orquestra o processo de cadastro de um novo filme, com validação robusta."""
         diretores_obj = self.__controlador_sistema.controlador_membros.buscar_por_funcao_e_genero("diretor")
         if not diretores_obj:
-            self.__tela_filmes.show_message("Erro", "É necessário cadastrar um diretor antes.")
+            self.__tela_filmes.show_message("Erro",
+                                            "É necessário cadastrar um diretor antes de poder cadastrar um filme.")
             return
 
         diretores_para_combo = [f"ID: {d.id} - {d.nome}" for d in diretores_obj]
         dados_brutos = self.__tela_filmes.pega_dados_filme(diretores_para_combo, {'titulo_janela': "Adicionar Filme"})
 
         if dados_brutos:
-            # Aqui o Controlador valida os dados brutos que vieram da Tela.
-            erros = []
-            titulo = dados_brutos['-TITULO-']
-            ano_str = dados_brutos['-ANO-']
-            nacionalidade = dados_brutos['-NACIONALIDADE-']
-            diretor_str = dados_brutos['-DIRETOR-']
-
-            if not titulo.strip(): erros.append("O campo 'Título' é obrigatório.")
-            if self.existe_titulo_filme(titulo): erros.append(f"Já existe um filme com o título '{titulo}'.")
-            if not nacionalidade.strip(): erros.append("O campo 'Nacionalidade' é obrigatório.")
-            if not diretor_str: erros.append("A seleção de um 'Diretor' é obrigatória.")
-
-            ano_int = None
             try:
-                ano_int = int(ano_str)
-                if not (1888 <= ano_int <= 2030): erros.append("O 'Ano' deve ser um valor realista.")
-            except (ValueError, TypeError):
-                erros.append("O 'Ano' deve ser um número inteiro válido.")
+                titulo = dados_brutos['-TITULO-']
+                ano_str = dados_brutos['-ANO-']
+                nacionalidade = dados_brutos['-NACIONALIDADE-']
+                diretor_str = dados_brutos['-DIRETOR-']
 
-            if erros:
-                self.__tela_filmes.show_message("Erros de Validação", "\n".join(erros))
-                return
+                # Validações que disparam um erro imediato se falharem
+                if not titulo.strip() or not nacionalidade.strip() or not diretor_str:
+                    raise ValueError("Todos os campos, incluindo a seleção de diretor, são obrigatórios.")
 
-            id_diretor = int(diretor_str.split(' ')[1])
-            novo_id = self.__dao.get_next_id()
-            novo_filme = Filme(id_filme=novo_id,
-                               titulo=titulo.strip(),
-                               ano_lancamento=ano_int,
-                               diretor_id=id_diretor,
-                               nacionalidade=Nacionalidade(nacionalidade.strip()))
+                if self.existe_titulo_filme(titulo):
+                    raise ValueError(f"Já existe um filme com o título '{titulo}'.")
 
-            self.__dao.add(key=novo_id, filme=novo_filme)
-            self.__tela_filmes.show_message("Sucesso", f"Filme '{novo_filme.titulo}' cadastrado.")
+                if any(c.isdigit() for c in nacionalidade):
+                    raise ValueError("O campo 'Nacionalidade' não pode conter números.")
+
+                # Validação do ano com exceção personalizada
+                try:
+                    ano_int = int(ano_str)
+                    if not (1888 <= ano_int <= 2030):
+                        raise AnoInvalidoException(ano_str)
+                except ValueError:
+                    raise AnoInvalidoException(ano_str)
+
+                # Se todas as validações passaram, o código continua para criar o objeto
+                id_diretor = int(diretor_str.split(' ')[1])
+                novo_id = self.__dao.get_next_id()
+
+                novo_filme = Filme(id_filme=novo_id,
+                                   titulo=titulo.strip(),
+                                   ano_lancamento=ano_int,
+                                   diretor_id=id_diretor,
+                                   nacionalidade=Nacionalidade(nacionalidade.strip()))
+
+                self.__dao.add(key=novo_id, filme=novo_filme)
+                self.__tela_filmes.show_message("Sucesso", f"Filme '{novo_filme.titulo}' cadastrado com sucesso.")
+
+            except (ValueError, AnoInvalidoException) as e:
+               self.__tela_filmes.show_message("Erro de Validação", str(e))
 
     def alterar(self, filme_alvo: Filme):
-        """Orquestra a alteração de um filme que já existe."""
+        """Orquestra a alteração de um filme que já existe, com validação robusta."""
         diretores_obj = self.__controlador_sistema.controlador_membros.buscar_por_funcao_e_genero("diretor")
         diretores_para_combo = [f"ID: {d.id} - {d.nome}" for d in diretores_obj]
         diretor_atual_str = ""
@@ -133,32 +147,41 @@ class ControladorFilmes:
         dados_brutos = self.__tela_filmes.pega_dados_filme(diretores_para_combo, dados_iniciais)
 
         if dados_brutos:
-            # A validação completa também é feita na alteração, para máxima segurança.
-            erros = []
-            titulo = dados_brutos['-TITULO-']
-            ano_str = dados_brutos['-ANO-']
-
-            if filme_alvo.titulo.casefold() != titulo.casefold() and self.existe_titulo_filme(titulo):
-                erros.append(f"Já existe outro filme com o título '{titulo}'.")
-
-            ano_int = None
             try:
-                ano_int = int(ano_str)
-                if not (1888 <= ano_int <= 2030): erros.append("O 'Ano' deve ser um valor realista.")
-            except (ValueError, TypeError):
-                erros.append("O 'Ano' deve ser um número inteiro válido.")
+                # O bloco 'try' tenta executar a lógica de validação e atualização
+                titulo = dados_brutos['-TITULO-']
+                ano_str = dados_brutos['-ANO-']
+                nacionalidade = dados_brutos['-NACIONALIDADE-']
 
-            if erros:
-                self.__tela_filmes.show_message("Erros de Validação", "\n".join(erros))
-                return
+                if not titulo.strip() or not nacionalidade.strip():
+                    raise ValueError("Os campos 'Título' e 'Nacionalidade' são obrigatórios.")
 
-            filme_alvo.titulo = titulo.strip()
-            filme_alvo.ano_lancamento = ano_int
-            filme_alvo.diretor_id = int(dados_brutos["-DIRETOR-"].split(' ')[1])
-            filme_alvo.nacionalidade = Nacionalidade(dados_brutos["-NACIONALIDADE-"].strip())
+                # Usa a exceção para um erro mais claro e específico
+                if filme_alvo.titulo.casefold() != titulo.casefold() and self.existe_titulo_filme(titulo):
+                    raise EntidadeDuplicadaException(titulo)
 
-            self.__dao.add(key=filme_alvo.id_filme, filme=filme_alvo)
-            self.__tela_filmes.show_message("Sucesso", "Filme alterado com sucesso!")
+                if any(c.isdigit() for c in nacionalidade):
+                    raise ValueError("O campo 'Nacionalidade' não pode conter números.")
+
+                try:
+                    ano_int = int(ano_str)
+                    if not (1888 <= ano_int <= 2030):
+                        raise AnoInvalidoException(ano_str)
+                except ValueError:
+                    raise AnoInvalidoException(ano_str)
+
+                # Se tudo deu certo, atualiza o objeto
+                filme_alvo.titulo = titulo.strip()
+                filme_alvo.ano_lancamento = ano_int
+                filme_alvo.diretor_id = int(dados_brutos["-DIRETOR-"].split(' ')[1])
+                filme_alvo.nacionalidade = Nacionalidade(nacionalidade.strip())
+
+                self.__dao.add(key=filme_alvo.id_filme, filme=filme_alvo)
+                self.__tela_filmes.show_message("Sucesso", "Filme alterado com sucesso!")
+
+            except (ValueError, AnoInvalidoException, EntidadeDuplicadaException) as e:
+                # Captura qualquer um dos erros de validação e mostra ao usuário
+                self.__tela_filmes.show_message("Erro de Validação", str(e))
 
     def excluir(self, filme_alvo: Filme):
         """Orquestra a exclusão de um filme, com confirmação."""

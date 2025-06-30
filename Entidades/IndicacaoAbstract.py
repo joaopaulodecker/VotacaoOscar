@@ -3,11 +3,12 @@ from abc import ABC, abstractmethod
 import Entidades.Categoria
 
 class IndicacaoAbstract(ABC):
-    def __init__(self, id_indicacao: int, categoria: Entidades.Categoria.Categoria, item_indicado_id: any, tipo_item_indicado: str):
+    def __init__(self, id_indicacao: int, categoria: Entidades.Categoria.Categoria, item_indicado_id: any, membro_id: int, tipo_item_indicado: str):
         self.__id_indicacao = id_indicacao
         self.__categoria = categoria
         self.__item_indicado_id = item_indicado_id
         self.__tipo_item_indicado = tipo_item_indicado
+        self.__membro_id = membro_id
 
     @property
     def id_indicacao(self) -> int:
@@ -28,6 +29,10 @@ class IndicacaoAbstract(ABC):
     @property
     def item_indicado_id(self) -> any:
         return self.__item_indicado_id
+
+    @property
+    def membro_id(self) -> int:
+        return self.__membro_id
 
     @property
     def tipo_item_indicado(self) -> str:

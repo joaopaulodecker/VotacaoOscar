@@ -38,28 +38,28 @@ class ControladorCategorias:
 
         while True:
             event, values = self.__tela_categoria.open_lista()
-
             if event in (None, '-VOLTAR-'):
                 break
 
+            # --- LÓGICA DE EVENTOS ---
             if event == '-ADICIONAR-':
                 self.cadastrar()
 
-            elif values.get('-TABELA-'):
-                index_selecionado = values['-TABELA-'][0]
-                id_categoria_selecionada = dados_tabela[index_selecionado][0]
-                categoria_alvo = self.buscar_categoria_por_id(id_categoria_selecionada)
-                if not categoria_alvo: continue
-
-                if event == '-EDITAR-':
-                    self.alterar(categoria_alvo)
-                elif event == '-EXCLUIR-':
-                    self.excluir(categoria_alvo)
-
             elif event in ('-EDITAR-', '-EXCLUIR-'):
-                self.__tela_categoria.show_message("Aviso", "Por favor, selecione uma categoria na tabela primeiro.")
+                if values.get('-TABELA-'):
+                    index_selecionado = values['-TABELA-'][0]
+                    id_categoria_selecionada = dados_tabela[index_selecionado][0]
+                    categoria_alvo = self.buscar_categoria_por_id(id_categoria_selecionada)
+                    if not categoria_alvo: continue
 
-            # Sempre atualiza a tabela após uma ação para refletir mudanças
+                    if event == '-EDITAR-':
+                        self.alterar(categoria_alvo)
+                    elif event == '-EXCLUIR-':
+                        self.excluir(categoria_alvo)
+                else:
+                    self.__tela_categoria.show_message("Aviso",
+                                                       "Por favor, selecione uma categoria na tabela primeiro.")
+
             dados_tabela = self._preparar_dados_tabela()
             self.__tela_categoria.refresh_table(dados_tabela)
 

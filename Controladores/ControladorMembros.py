@@ -3,6 +3,8 @@ from Entidades.Nacionalidade import Nacionalidade
 from Entidades.Ator import Ator
 from Entidades.Diretor import Diretor
 from Entidades.MembroAcademia import MembroAcademia
+from Excecoes.EntidadeDuplicadaException import EntidadeDuplicadaException
+from Excecoes.AnoInvalidoException import AnoInvalidoException
 from Limites.TelaMembros import TelaMembros
 from DAOs.MembroDao import MembroDAO
 
@@ -76,80 +78,85 @@ class ControladorMembros:
             if event in (None, '-VOLTAR-'):
                 break
 
-            # --- Bloco de tratamento de eventos ---
+            # --- LÓGICA DE EVENTOS ---
             if event == '-ADICIONAR-':
                 self.cadastrar()
-            elif values.get('-TABELA-'):
-                index_selecionado = values['-TABELA-'][0]
-                id_membro_selecionado = dados_tabela[index_selecionado][0]
-                membro_alvo = self.buscar_por_id(id_membro_selecionado)
-                if not membro_alvo: continue
-
-                if event == '-EDITAR-':
-                    self.alterar(membro_alvo)
-                elif event == '-EXCLUIR-':
-                    self.excluir(membro_alvo)
 
             elif event in ('-EDITAR-', '-EXCLUIR-'):
-                self.__tela_membros.show_message("Aviso", "Por favor, selecione uma pessoa na tabela primeiro.")
+                if values.get('-TABELA-'):
+                    index_selecionado = values['-TABELA-'][0]
+                    id_membro_selecionado = dados_tabela[index_selecionado][0]
+                    membro_alvo = self.buscar_por_id(id_membro_selecionado)
+                    if not membro_alvo: continue
 
-            # Após qualquer ação, atualiza a tabela para refletir as mudanças
+                    if event == '-EDITAR-':
+                        self.alterar(membro_alvo)
+                    elif event == '-EXCLUIR-':
+                        self.excluir(membro_alvo)
+                else:
+                    self.__tela_membros.show_message("Aviso", "Por favor, selecione uma pessoa na tabela primeiro.")
+
             dados_tabela = self._preparar_dados_tabela()
             self.__tela_membros.refresh_table(dados_tabela)
 
         self.__tela_membros.close_lista()
 
     def cadastrar(self):
-        """Orquestra o processo de cadastro de um novo membro."""
+        """Orquestra o processo de cadastro de um novo membro com validação robusta."""
         dados_brutos = self.__tela_membros.pega_dados_membro({
             'titulo_janela': "Adicionar Pessoa", 'is_ator': True
         })
 
         if dados_brutos:
-            # O Controlador faz toda a validação dos dados brutos recebidos da Tela.
-            erros = []
-            nome = dados_brutos["-NOME-"].strip().title()
-            nacionalidade = dados_brutos["-NACIONALIDADE-"].strip().title()
-
-            if not nome: erros.append("O campo 'Nome' é obrigatório.")
-            if self._existe_nome_membro(nome): erros.append(f"Já existe uma pessoa com o nome '{nome}'.")
-            if not nacionalidade: erros.append("O campo 'Nacionalidade' é obrigatório.")
-
-            # Garante que a variável 'ano_nasc' sempre exista antes de ser usada
-            ano_nasc = None
             try:
-                ano_nasc = int(dados_brutos["-NASCIMENTO-"])
-                if not (1900 <= ano_nasc <= date.today().year):
-                    erros.append(f"O ano de nascimento deve ser entre 1900 e {date.today().year}.")
-            except (ValueError, TypeError):
-                erros.append("Ano de nascimento deve ser um número válido.")
+                # Tenta executar toda a lógica de validação e criação
+                nome = dados_brutos["-NOME-"].strip().title()
+                nacionalidade_str = dados_brutos["-NACIONALIDADE-"].strip().title()
+                ano_nasc_str = dados_brutos["-NASCIMENTO-"]
 
-            if erros:
-                self.__tela_membros.show_message("Erros de Validação", "\n".join(erros))
-                return
+                if not nome or not nacionalidade_str:
+                    raise ValueError("Os campos 'Nome' e 'Nacionalidade' são obrigatórios.")
 
-            # O Controlador cria o objeto correto e o salva
-            novo_id = self.__dao.get_next_id()
-            nacionalidade_obj = Nacionalidade(nacionalidade)
-            novo_membro = None
+                if self._existe_nome_membro(nome):
+                    raise EntidadeDuplicadaException(nome)
 
-            if dados_brutos["-TIPO_ATOR-"]:
-                genero = "Atriz" if dados_brutos["-GENERO_ATRIZ-"] else "Ator"
-                # Os nomes dos parâmetros (id_, data_nascimento) devem bater com os da sua classe Ator
-                novo_membro = Ator(id_=novo_id, nome=nome, data_nascimento=ano_nasc, nacionalidade=nacionalidade_obj,
-                                   genero_artistico=genero)
-            elif dados_brutos["-TIPO_DIRETOR-"]:
-                novo_membro = Diretor(id_=novo_id, nome=nome, data_nascimento=ano_nasc, nacionalidade=nacionalidade_obj)
-            elif dados_brutos["-TIPO_MEMBRO-"]:
-                novo_membro = MembroAcademia(id_=novo_id, nome=nome, data_nascimento=ano_nasc,
-                                             nacionalidade=nacionalidade_obj, funcao="membro")
+                if any(c.isdigit() for c in nacionalidade_str):
+                    raise ValueError("O campo 'Nacionalidade' não pode conter números.")
 
-            if novo_membro:
-                self.__dao.add(key=novo_id, membro=novo_membro)
-                self.__tela_membros.show_message("Sucesso", "Pessoa cadastrada com sucesso.")
+                try:
+                    ano_nasc = int(ano_nasc_str)
+                    if not (1900 <= ano_nasc <= date.today().year):
+                        raise AnoInvalidoException(ano_nasc_str)
+                except ValueError:
+                    raise AnoInvalidoException(ano_nasc_str)
+
+                # Se tudo deu certo, cria o objeto correto
+                novo_id = self.__dao.get_next_id()
+                nacionalidade_obj = Nacionalidade(nacionalidade_str)
+                novo_membro = None
+
+                if dados_brutos["-TIPO_ATOR-"]:
+                    genero = "Atriz" if dados_brutos["-GENERO_ATRIZ-"] else "Ator"
+                    novo_membro = Ator(id_=novo_id, nome=nome, data_nascimento=ano_nasc,
+                                       nacionalidade=nacionalidade_obj, genero_artistico=genero)
+                elif dados_brutos["-TIPO_DIRETOR-"]:
+                    novo_membro = Diretor(id_=novo_id, nome=nome, data_nascimento=ano_nasc,
+                                          nacionalidade=nacionalidade_obj)
+                elif dados_brutos["-TIPO_MEMBRO-"]:
+                    novo_membro = MembroAcademia(id_=novo_id, nome=nome, data_nascimento=ano_nasc,
+                                                 nacionalidade=nacionalidade_obj, funcao="membro")
+
+                if novo_membro:
+                    self.__dao.add(key=novo_id, membro=novo_membro)
+                    self.__tela_membros.show_message("Sucesso", "Pessoa cadastrada com sucesso.")
+                else:
+                    raise ValueError("Um tipo de pessoa deve ser selecionado.")
+
+            except (ValueError, AnoInvalidoException, EntidadeDuplicadaException) as e:
+                self.__tela_membros.show_message("Erro de Validação", str(e))
 
     def alterar(self, membro_alvo):
-        """Orquestra a alteração de um membro existente."""
+        """Orquestra a alteração de um membro existente com validação robusta."""
         is_ator = isinstance(membro_alvo, Ator)
         dados_iniciais = {
             'titulo_janela': "Editar Pessoa", 'is_edicao': True, 'is_ator': is_ator,
@@ -161,35 +168,40 @@ class ControladorMembros:
 
         dados_brutos = self.__tela_membros.pega_dados_membro(dados_iniciais)
         if dados_brutos:
-            # Validação completa também na alteração, para segurança máxima.
-            erros = []
-            novo_nome = dados_brutos["-NOME-"].strip().title()
-            if not novo_nome: erros.append("O campo 'Nome' é obrigatório.")
-            if (membro_alvo.nome.casefold() != novo_nome.casefold() and
-                    self._existe_nome_membro(novo_nome, id_excluir=membro_alvo.id)):
-                erros.append(f"Já existe outra pessoa com o nome '{novo_nome}'.")
-
-            ano_nasc = None
             try:
-                ano_nasc = int(dados_brutos["-NASCIMENTO-"])
-                if not (1900 <= ano_nasc <= date.today().year):
-                    erros.append(f"O ano de nascimento deve ser entre 1900 e {date.today().year}.")
-            except (ValueError, TypeError):
-                erros.append("Ano de nascimento deve ser um número válido.")
+                novo_nome = dados_brutos["-NOME-"].strip().title()
+                nacionalidade_str = dados_brutos["-NACIONALIDADE-"].strip().title()
+                ano_nasc_str = dados_brutos["-NASCIMENTO-"]
 
-            if erros:
-                self.__tela_membros.show_message("Erros de Validação", "\n".join(erros))
-                return
+                if not novo_nome or not nacionalidade_str:
+                    raise ValueError("Os campos 'Nome' e 'Nacionalidade' são obrigatórios.")
 
-            # Atualização do objeto original.
-            membro_alvo.nome = novo_nome
-            membro_alvo.data_nascimento = ano_nasc
-            membro_alvo.nacionalidade = Nacionalidade(dados_brutos["-NACIONALIDADE-"].strip().title())
-            if isinstance(membro_alvo, Ator):
-                membro_alvo.genero_artistico = "Atriz" if dados_brutos["-GENERO_ATRIZ-"] else "Ator"
+                if (membro_alvo.nome.casefold() != novo_nome.casefold() and
+                        self._existe_nome_membro(novo_nome, id_excluir=membro_alvo.id)):
+                    raise EntidadeDuplicadaException(novo_nome)
 
-            self.__dao.add(key=membro_alvo.id, membro=membro_alvo)
-            self.__tela_membros.show_message("Sucesso", "Alteração realizada com sucesso!")
+                if any(c.isdigit() for c in nacionalidade_str):
+                    raise ValueError("O campo 'Nacionalidade' não pode conter números.")
+
+                try:
+                    ano_nasc = int(ano_nasc_str)
+                    if not (1900 <= ano_nasc <= date.today().year):
+                        raise AnoInvalidoException(ano_nasc_str)
+                except ValueError:
+                    raise AnoInvalidoException(ano_nasc_str)
+
+                # Atualiza o objeto original
+                membro_alvo.nome = novo_nome
+                membro_alvo.data_nascimento = ano_nasc
+                membro_alvo.nacionalidade = Nacionalidade(nacionalidade_str)
+                if isinstance(membro_alvo, Ator):
+                    membro_alvo.genero_artistico = "Atriz" if dados_brutos["-GENERO_ATRIZ-"] else "Ator"
+
+                self.__dao.add(key=membro_alvo.id, membro=membro_alvo)
+                self.__tela_membros.show_message("Sucesso", "Alteração realizada com sucesso!")
+
+            except (ValueError, AnoInvalidoException, EntidadeDuplicadaException) as e:
+                self.__tela_membros.show_message("Erro de Validação", str(e))
 
     def excluir(self, membro_alvo):
         """Orquestra a exclusão de um membro."""

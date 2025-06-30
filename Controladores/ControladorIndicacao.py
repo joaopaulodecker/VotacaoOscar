@@ -43,19 +43,19 @@ class ControladorIndicacao:
             if event == '-ADICIONAR-':
                 self.iniciar_processo_indicacao()
 
-            elif values.get('-TABELA-'):
-                index_selecionado = values['-TABELA-'][0]
-                id_indicacao = dados_tabela[index_selecionado][0]
-                indicacao_alvo = self.__dao.get(id_indicacao)
-                if not indicacao_alvo: continue
-
-                if event == '-EXCLUIR-':
-                    self.excluir_indicacao(indicacao_alvo)
-
+            # --- LÓGICA DE EVENTOS ---
             elif event == '-EXCLUIR-':
-                self.__tela_indicacao.show_message("Aviso", "Por favor, selecione uma indicação na tabela primeiro.")
+                if values.get('-TABELA-'):
+                    index_selecionado = values['-TABELA-'][0]
+                    id_indicacao = dados_tabela[index_selecionado][0]
+                    indicacao_alvo = self.__dao.get(id_indicacao)
+                    if not indicacao_alvo: continue
 
-            # Sempre atualiza a tabela para refletir as mudanças
+                    self.excluir_indicacao(indicacao_alvo)
+                else:
+                    self.__tela_indicacao.show_message("Aviso",
+                                                       "Por favor, selecione uma indicação na tabela primeiro.")
+
             dados_tabela = self._preparar_dados_tabela()
             self.__tela_indicacao.refresh_table(dados_tabela)
 
@@ -68,14 +68,14 @@ class ControladorIndicacao:
             self.__tela_indicacao.show_message("Aviso", "O período de indicações já foi encerrado.")
             return
 
-        # --- PASSO 1: Selecionar Indicante e Categoria ---
+        # 1: Selecionar Indicante e Categoria -----
         categorias = self.__controlador_categorias.entidades
         membros = self.__controlador_membros.membros
         if not categorias or not membros:
             self.__tela_indicacao.show_message("Aviso", "É preciso ter Categorias e Membros cadastrados.")
             return
 
-        # O Controlador prepara os dados para a Tela "burra" apenas exibir
+        #prepara os dados para a Tela apenas exibir
         mapa_categorias = {f"ID {cat.id}: {cat.nome}": cat for cat in categorias}
         mapa_membros = {f"ID {m.id}: {m.nome}": m for m in membros}
 
@@ -83,11 +83,11 @@ class ControladorIndicacao:
         if not dados_passo1 or not dados_passo1.get('-CATEGORIA-') or not dados_passo1.get('-MEMBRO-'):
             return  # Usuário cancelou ou não selecionou tudo
 
-        # O Controlador processa os dados brutos que a Tela retornou
+        #processa os dados brutos que a Tela retornou
         membro_obj = mapa_membros[dados_passo1['-MEMBRO-'][0]]
         categoria_obj = mapa_categorias[dados_passo1['-CATEGORIA-'][0]]
 
-        # --- PASSO 2: Selecionar o Indicado ---
+        #2: Selecionar o Indicado ------
         lista_indicaveis = self._get_lista_indicaveis(categoria_obj)
         if not lista_indicaveis:
             self.__tela_indicacao.show_message("Aviso",
@@ -99,10 +99,10 @@ class ControladorIndicacao:
         if not dados_passo2 or not dados_passo2.get('-INDICADO-'):
             return  # Usuário cancelou ou não selecionou
 
-        # O Controlador processa a seleção final e salva o objeto
+        #processa a seleção final e salva o objeto
         item_indicado = mapa_indicaveis[dados_passo2['-INDICADO-'][0]]
 
-        # O Controlador cria o objeto de indicação correto, passando os argumentos com os nomes corretos
+        # Por fim, cria o objeto de indicação correto
         novo_id = self.__dao.get_next_id()
         tipo_indicado = item_indicado['tipo_original_indicado']
         objeto_indicado = item_indicado['objeto_completo']
@@ -132,8 +132,9 @@ class ControladorIndicacao:
         if tipo_item == "filme":
             lista_crua = self.__controlador_filmes.filmes
         elif tipo_item == "ator":
-            genero_alvo = "Atriz" if "atriz" in categoria_obj.nome.lower() else "Ator"
-            lista_crua = self.__controlador_membros.buscar_por_funcao_e_genero("ator", genero_alvo)
+            lista_crua = self.__controlador_membros.buscar_por_funcao_e_genero("ator", genero_alvo= "Ator")
+        elif tipo_item == "atriz":
+            lista_crua = self.__controlador_membros.buscar_por_funcao_e_genero("ator", genero_alvo="Atriz")
         elif tipo_item == "diretor":
             lista_crua = self.__controlador_membros.buscar_por_funcao_e_genero("diretor")
 
