@@ -47,6 +47,7 @@ class ControladorFilmes:
         while True:
             event, values = self.__tela_filmes.open_lista()
             if event in (None, '-VOLTAR-'):
+                self.__tela_filmes.close_lista()
                 break
 
             # --- LÓGICA DE EVENTOS ---
@@ -55,26 +56,26 @@ class ControladorFilmes:
             elif event == '-AGRUPAR-':
                 self.listar_filmes_agrupados_por_nacionalidade()
 
-            # Primeiro, checa se o evento foi de Editar ou Excluir
+            # 1. Primeiro, o código pergunta se o botão clicado foi EDITAR ou EXCLUIR.
             elif event in ('-EDITAR-', '-EXCLUIR-'):
-                # SÓ DEPOIS, checa se uma linha da tabela foi selecionada
+                # 2. Verifica se uma linha da tabela está selecionada.
                 if values.get('-TABELA-'):
                     index_selecionado = values['-TABELA-'][0]
                     id_filme_selecionado = dados_tabela[index_selecionado][0]
                     filme_alvo = self.buscar_filme_por_id(id_filme_selecionado)
-                    if not filme_alvo: continue
 
-                    if event == '-EDITAR-':
+                    if filme_alvo and event == '-EDITAR-':
                         self.alterar(filme_alvo)
-                    elif event == '-EXCLUIR-':
+                    elif filme_alvo and event == '-EXCLUIR-':
                         self.excluir(filme_alvo)
                 else:
-                    # Se não tinha nenhuma linha selecionada, mostra o aviso
+                    # 3. Se o botão foi clicado sem seleção, ele mostra o aviso.
                     self.__tela_filmes.show_message("Aviso", "Por favor, selecione um filme na tabela primeiro.")
 
-            # Após qualquer ação, atualiza a tabela
-            dados_tabela = self._preparar_dados_tabela()
-            self.__tela_filmes.refresh_table(dados_tabela)
+            # Após qualquer ação que altere os dados, a tabela é atualizada.
+            if event in ('-ADICIONAR-', '-EDITAR-', '-EXCLUIR-'):
+                dados_tabela = self._preparar_dados_tabela()
+                self.__tela_filmes.refresh_table(dados_tabela)
 
         self.__tela_filmes.close_lista()
     def cadastrar(self):

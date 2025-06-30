@@ -39,6 +39,7 @@ class ControladorCategorias:
         while True:
             event, values = self.__tela_categoria.open_lista()
             if event in (None, '-VOLTAR-'):
+                self.__tela_categoria.close_lista()
                 break
 
             # --- LÓGICA DE EVENTOS ---
@@ -50,21 +51,18 @@ class ControladorCategorias:
                     index_selecionado = values['-TABELA-'][0]
                     id_categoria_selecionada = dados_tabela[index_selecionado][0]
                     categoria_alvo = self.buscar_categoria_por_id(id_categoria_selecionada)
-                    if not categoria_alvo: continue
 
-                    if event == '-EDITAR-':
+                    if categoria_alvo and event == '-EDITAR-':
                         self.alterar(categoria_alvo)
-                    elif event == '-EXCLUIR-':
+                    elif categoria_alvo and event == '-EXCLUIR-':
                         self.excluir(categoria_alvo)
                 else:
                     self.__tela_categoria.show_message("Aviso",
                                                        "Por favor, selecione uma categoria na tabela primeiro.")
 
-            dados_tabela = self._preparar_dados_tabela()
-            self.__tela_categoria.refresh_table(dados_tabela)
-
-        self.__tela_categoria.close_lista()
-
+            if event in ('-ADICIONAR-', '-EDITAR-', '-EXCLUIR-'):
+                dados_tabela = self._preparar_dados_tabela()
+                self.__tela_categoria.refresh_table(dados_tabela)
     def cadastrar(self):
         """Orquestra o processo de cadastro de uma nova categoria."""
         dados_brutos = self.__tela_categoria.pega_dados_categoria({

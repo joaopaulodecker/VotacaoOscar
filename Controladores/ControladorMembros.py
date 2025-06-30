@@ -76,6 +76,7 @@ class ControladorMembros:
         while True:
             event, values = self.__tela_membros.open_lista()
             if event in (None, '-VOLTAR-'):
+                self.__tela_membros.close_lista()
                 break
 
             # --- LÓGICA DE EVENTOS ---
@@ -87,19 +88,17 @@ class ControladorMembros:
                     index_selecionado = values['-TABELA-'][0]
                     id_membro_selecionado = dados_tabela[index_selecionado][0]
                     membro_alvo = self.buscar_por_id(id_membro_selecionado)
-                    if not membro_alvo: continue
 
-                    if event == '-EDITAR-':
+                    if membro_alvo and event == '-EDITAR-':
                         self.alterar(membro_alvo)
-                    elif event == '-EXCLUIR-':
+                    elif membro_alvo and event == '-EXCLUIR-':
                         self.excluir(membro_alvo)
                 else:
                     self.__tela_membros.show_message("Aviso", "Por favor, selecione uma pessoa na tabela primeiro.")
 
-            dados_tabela = self._preparar_dados_tabela()
-            self.__tela_membros.refresh_table(dados_tabela)
-
-        self.__tela_membros.close_lista()
+            if event in ('-ADICIONAR-', '-EDITAR-', '-EXCLUIR-'):
+                dados_tabela = self._preparar_dados_tabela()
+                self.__tela_membros.refresh_table(dados_tabela)
 
     def cadastrar(self):
         """Orquestra o processo de cadastro de um novo membro com validação robusta."""
