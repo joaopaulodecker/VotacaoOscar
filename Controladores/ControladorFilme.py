@@ -14,6 +14,10 @@ class ControladorFilmes:
         self.__dao = FilmeDAO()
         self.__tela_filmes = TelaFilmes()
 
+    def get_filmes(self):
+        """Metodo público para fornecer a lista de todos os filmes."""
+        return self.__dao.get_all()
+
     def _preparar_dados_tabela(self):
         """Busca os filmes e formata os dados para a tabela da interface."""
         filmes = self.__dao.get_all()

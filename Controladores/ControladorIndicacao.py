@@ -69,7 +69,7 @@ class ControladorIndicacao:
             return
 
         # 1: Selecionar Indicante e Categoria -----
-        categorias = self.__controlador_categorias.entidades
+        categorias = self.__controlador_categorias.categorias
         membros = self.__controlador_membros.membros
         if not categorias or not membros:
             self.__tela_indicacao.show_message("Aviso", "É preciso ter Categorias e Membros cadastrados.")
@@ -130,7 +130,7 @@ class ControladorIndicacao:
         lista_formatada, lista_crua = [], []
 
         if tipo_item == "filme":
-            lista_crua = self.__controlador_filmes.filmes
+            lista_crua = self.__controlador_filmes.get_filmes()
         elif tipo_item == "ator":
             lista_crua = self.__controlador_membros.buscar_por_funcao_e_genero("ator", genero_alvo= "Ator")
         elif tipo_item == "atriz":
