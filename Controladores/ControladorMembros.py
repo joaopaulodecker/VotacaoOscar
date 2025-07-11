@@ -17,17 +17,17 @@ class ControladorMembros:
         self.__dao = MembroDAO()
         self.__tela_membros = TelaMembros()
 
-    @property
-    def membros(self):
-        """Retorna todos os membros do DAO."""
+    def get_membros(self):
+        """Metodo público para fornecer a lista de todos os membros."""
         return self.__dao.get_all()
 
     # --- MÉTODOS DE PREPARAÇÃO E BUSCA ---
 
     def _preparar_dados_tabela(self):
         """Busca os membros e os formata para a tabela da interface."""
+        membros = self.get_membros()
         dados_tabela = []
-        for membro in self.membros:
+        for membro in membros:
             genero = "N/A"
             # Define o 'Tipo' e o 'Gênero' baseado na classe do objeto
             if isinstance(membro, Ator):
@@ -48,7 +48,7 @@ class ControladorMembros:
 
     def _existe_nome_membro(self, nome: str, id_excluir: int = None):
         """Verifica se um nome de membro já existe."""
-        for membro in self.membros:
+        for membro in self.get_membros():
             if id_excluir is not None and membro.id == id_excluir:
                 continue
             if membro.nome.casefold() == nome.casefold():
@@ -58,7 +58,7 @@ class ControladorMembros:
     def buscar_por_funcao_e_genero(self, funcao_busca: str, genero_alvo: str = None):
         """Busca membros por tipo e, opcionalmente, por gênero artístico."""
         membros_aptos = []
-        for membro in self.membros:
+        for membro in self.get_membros():
             if isinstance(membro, Diretor) and funcao_busca == 'diretor':
                 membros_aptos.append(membro)
             elif isinstance(membro, Ator) and funcao_busca == 'ator':

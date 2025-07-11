@@ -69,8 +69,8 @@ class ControladorIndicacao:
             return
 
         # 1: Selecionar Indicante e Categoria -----
-        categorias = self.__controlador_categorias.categorias
-        membros = self.__controlador_membros.membros
+        categorias = self.__controlador_categorias.get_categorias()
+        membros = self.__controlador_membros.get_membros()
         if not categorias or not membros:
             self.__tela_indicacao.show_message("Aviso", "É preciso ter Categorias e Membros cadastrados.")
             return

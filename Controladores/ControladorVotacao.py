@@ -37,8 +37,8 @@ class ControladorVotacao:
             return
 
         # --- PASSO 1: Selecionar Votante e Categoria ---
-        membros = self.__controlador_membros.membros
-        categorias = self.__controlador_categorias.categorias
+        membros = self.__controlador_membros.get_membros()
+        categorias = self.__controlador_categorias.get_categorias()
         if not membros or not categorias:
             self.__tela_votacao.show_message("Aviso", "É preciso ter Membros e Categorias cadastrados.")
             return

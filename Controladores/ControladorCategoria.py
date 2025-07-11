@@ -10,9 +10,8 @@ class ControladorCategorias:
         self.__dao = CategoriaDAO()
         self.__tela_categoria = TelaCategoria()
 
-    @property
-    def categorias(self):
-        """Propriedade que retorna todas as categorias do DAO."""
+    def get_categorias(self):
+        """Metodo público para fornecer a lista de todas as categorias."""
         return self.__dao.get_all()
 
     def _preparar_dados_tabela(self):
