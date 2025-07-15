@@ -21,7 +21,7 @@ class ControladorFilmes:
     def _preparar_dados_tabela(self):
         """Busca os filmes e formata os dados para a tabela da interface."""
         filmes = self.__dao.get_all()
-        mapa_diretores = {d.id: d.nome for d in self.__controlador_sistema.controlador_membros.membros}
+        mapa_diretores = {d.id: d.nome for d in self.__controlador_sistema.controlador_membros.get_membros()}
 
         dados_tabela = []
         for filme in filmes:
@@ -203,7 +203,7 @@ class ControladorFilmes:
             self.__tela_filmes.show_message("Aviso", "Nenhum filme cadastrado.")
             return
 
-        mapa_diretores = {d.id: d.nome for d in self.__controlador_sistema.controlador_membros.membros}
+        mapa_diretores = {d.id: d.nome for d in self.__controlador_sistema.controlador_membros.get_membros()}
         filmes_por_nacionalidade = {}
         for filme in todos_os_filmes:
             pais = filme.nacionalidade.pais

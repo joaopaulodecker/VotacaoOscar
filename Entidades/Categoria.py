@@ -11,7 +11,7 @@ class Categoria:
         -tipo_indicacao (str): Tipo de item que pode ser indicado nesta categoria
                               (definido em TIPOS_VALIDOS).
     """
-    TIPOS_VALIDOS = ("ator", "diretor", "filme")
+    TIPOS_VALIDOS = ("ator", "atriz", "diretor", "filme")
 
     def __init__(self, id_categoria: int, nome: str, tipo_indicacao: str):
         self.__tipo = tipo_indicacao.lower()

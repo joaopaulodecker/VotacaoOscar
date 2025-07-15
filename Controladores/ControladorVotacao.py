@@ -90,10 +90,10 @@ class ControladorVotacao:
         """Busca os votos, calcula os resultados e pede para a tela exibir."""
         todos_os_votos = self.__dao.get_all()
         if not todos_os_votos:
-            self.__tela_votacao.mostra_resultados(None)
+            self.__tela_votacao.mostra_resultados([])
             return
 
-        # O Controlador faz toda a lógica de contagem e formatação
+        # Agrupa os votos por categoria
         resultados = {}
         for voto in todos_os_votos:
             cat_id = voto.categoria.id
@@ -104,19 +104,22 @@ class ControladorVotacao:
             if voto.tipo_item_indicado == "filme":
                 filme = self.__controlador_filmes.buscar_filme_por_id(voto.item_indicado_id)
                 if filme: nome_item = filme.titulo
-            elif voto.tipo_item_indicado in ["ator", "diretor"]:
+            elif voto.tipo_item_indicado in ["ator", "atriz", "diretor"]:
                 membro = self.__controlador_membros.buscar_por_id(voto.item_indicado_id)
                 if membro: nome_item = membro.nome
 
             resultados[cat_id]["contagem_votos"][nome_item] += 1
 
         # Formata o texto final para a tela "burra" apenas exibir
-        texto_final = ""
+        resultados_finais = []
         for dados in resultados.values():
-            texto_final += f"🏆 Categoria: {dados['nome_categoria']}\n" + "-" * 40 + "\n"
-            votos_ordenados = sorted(dados["contagem_votos"].items(), key=lambda item: item[1], reverse=True)
-            for item_nome, contagem in votos_ordenados:
-                texto_final += f"   - {item_nome}: {contagem} voto(s)\n"
-            texto_final += "\n"
+            votos_ordenados = dados["contagem_votos"].most_common(1)
+            if votos_ordenados:
+                vencedor, num_votos = votos_ordenados[0]
+                resultados_finais.append({
+                    "categoria": dados["nome_categoria"],
+                    "vencedor": vencedor,
+                    "votos": num_votos
+                })
 
-        self.__tela_votacao.mostra_resultados(texto_final)
+        self.__tela_votacao.mostra_resultados(resultados_finais)

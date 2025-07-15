@@ -48,11 +48,30 @@ class TelaVotacao:
             return values
         return None
 
-    def mostra_resultados(self, texto_resultados: str):
-        """Exibe os resultados da votação em uma janela com scroll."""
-        if not texto_resultados:
-            texto_resultados = "Nenhum voto registrado para exibir."
-        sg.PopupScrolled(texto_resultados, title="Resultados da Votação", size=(80, 25))
+    def mostra_resultados(self, resultados_finais: list):
+        """
+        Cria uma janela personalizada e emocionante para anunciar os vencedores
+        """
+        if not resultados_finais:
+            self.show_message("Resultados", "Nenhum voto registrado para exibir.")
+            return
+
+        layout_resultados = [
+            [sg.Text('E o Oscar vai para...', font=('Helvetica', 25), justification='center', expand_x=True, pad=(0,10))],
+            [sg.HorizontalSeparator(pad=(0,10))]
+        ]
+
+        # Para cada vencedor que o controlador enviou, criamos uma seção no layout
+        for resultado in resultados_finais:
+            layout_resultados.extend([
+                [sg.Text(f"🏆 {resultado['categoria']}", font=('Helvetica', 14, 'bold'))],
+                [sg.Text(f"Vencedor(a): {resultado['vencedor']}", font=('Helvetica', 12), pad=(15,0))],
+                [sg.Text(f"Com {resultado['votos']} voto(s)", font=('Helvetica', 10, 'italic'), pad=(15, 5))],
+                [sg.HorizontalSeparator(pad=(0,10))]
+            ])
+
+        layout_resultados.append([sg.Push(), sg.Button('Ok', size=(10,1)), sg.Push()])
+        sg.Window("Resultados Finais do Oscar", layout_resultados, element_justification='c').read(close=True)
 
     def open(self):
         """Lê um evento da janela principal de votação."""
