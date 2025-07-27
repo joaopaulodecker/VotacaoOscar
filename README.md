@@ -23,12 +23,6 @@
 
 ---
 
-## ✨ Demonstração
-
-*:[COLE AQUI O LINK PARA O SEU GIF DE DEMONSTRAÇÃO]*
-
----
-
 ## 🚀 Funcionalidades Principais
 
 -   **🗳️ Gestão Completa:** Cadastre, edite e remova Filmes, Categorias e Membros da Academia (Atores, Diretores, etc.).
